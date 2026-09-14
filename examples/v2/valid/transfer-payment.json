@@ -1,0 +1,12 @@
+{
+  "idpk": "c110716d-3378-4b68-a6d7-f26221f0f88a",
+  "msgId": "37fb62e7-e03d-4dbe-a47f-ca0adcb13f30",
+  "type": "transfer",
+  "timestamp": "2026-09-09T03:06:00Z",
+  "cityId": "COR",
+  "cycleId": "cycle-9431",
+  "data": {
+    "becauseOf": "779013ec-4e35-4ff7-8dd1-e5fd707ac13a",
+    "quantity": 435160
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Negotiation Report",
+
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/cityEnvelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "cycleId",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "negotiation-report"
+        },
+
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "budgetBalance",
+            "energyBalance"
+          ],
+          "properties": {
+            "budgetBalance": {
+              "type": "number"
+            },
+
+            "energyBalance": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

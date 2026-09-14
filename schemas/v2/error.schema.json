@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Error",
+
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/centralEnvelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "cycleId",
+        "reason",
+        "code",
+        "data"
+      ],
+
+      "properties": {
+        "type": {
+          "const": "error"
+        },
+
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
+        },
+
+        "reason": {
+          "type": "string"
+        },
+
+        "code": {
+          "type": "integer"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "target",
+            "message"
+          ],
+
+          "properties": {
+            "target": {
+              "$ref": "common.schema.json#/$defs/uuid"
+            },
+
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+
+            "cycleId": {
+              "$ref": "common.schema.json#/$defs/cycleId"
+            },
+
+            "cap": {
+              "type": "number"
+            },
+
+            "spare": {
+              "type": "number"
+            }
+          },
+
+          "additionalProperties": false
+        }
+      },
+
+      "oneOf": [
+        {
+          "properties": {
+            "reason": {
+              "const": "CYCLE_UNKNOWN"
+            },
+            "code": {
+              "const": 404
+            }
+          }
+        },
+        {
+          "properties": {
+            "reason": {
+              "const": "CYCLE_EXPIRED"
+            },
+            "code": {
+              "const": 410
+            }
+          }
+        },
+        {
+          "properties": {
+            "reason": {
+              "const": "PRICE_ABOVE_CAP"
+            },
+            "code": {
+              "const": 422
+            },
+            "data": {
+              "required": [
+                "cap"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "reason": {
+              "const": "OVER_CAPACITY"
+            },
+            "code": {
+              "const": 409
+            },
+            "data": {
+              "required": [
+                "spare"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Status Statement",
+
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/centralEnvelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "cycleId",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "status-statement"
+        },
+
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "energy",
+            "validUntil"
+          ],
+          "properties": {
+            "energy": {
+              "type": "object",
+              "required": [
+                "generationCapacity",
+                "consumption",
+                "generationCost"
+              ],
+              "properties": {
+                "generationCapacity": {
+                  "type": "number"
+                },
+                "consumption": {
+                  "type": "number"
+                },
+                "generationCost": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            },
+
+            "validUntil": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

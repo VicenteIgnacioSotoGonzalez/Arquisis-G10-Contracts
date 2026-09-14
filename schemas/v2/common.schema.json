@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Common Definitions",
+
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+
+    "cityCode": {
+      "type": "string",
+      "enum": [
+        "HGW",
+        "COR",
+        "REE",
+        "RAP",
+        "TAL",
+        "LSN",
+        "MTI",
+        "SPR",
+        "NNY",
+        "KLD",
+        "TAR",
+        "TK3"
+      ]
+    },
+
+    "cycleId": {
+      "type": "string",
+      "minLength": 1
+    },
+
+    "baseEnvelope": {
+      "type": "object",
+
+      "required": [
+        "idpk",
+        "msgId",
+        "type",
+        "timestamp"
+      ],
+
+      "properties": {
+        "idpk": {
+          "$ref": "#/$defs/uuid"
+        },
+
+        "msgId": {
+          "$ref": "#/$defs/uuid"
+        },
+
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+
+        "timestamp": {
+          "$ref": "#/$defs/timestamp"
+        },
+
+        "cityId": {
+          "$ref": "#/$defs/cityCode"
+        },
+
+        "sender": {
+          "type": "string"
+        },
+
+        "cycleId": {
+          "$ref": "#/$defs/cycleId"
+        }
+      }
+    },
+
+    "cityEnvelope": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseEnvelope"
+        },
+        {
+          "required": [
+            "cityId"
+          ],
+          "not": {
+            "required": [
+              "sender"
+            ]
+          }
+        }
+      ]
+    },
+
+    "centralEnvelope": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseEnvelope"
+        },
+        {
+          "required": [
+            "sender"
+          ],
+          "properties": {
+            "sender": {
+              "const": "central"
+            }
+          },
+          "not": {
+            "required": [
+              "cityId"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "idpk": "1c6da08a-cce1-48d0-a54c-239834544fe9",
+  "msgId": "54cd98ab-846c-4817-a2da-6aa96fefec19",
+  "type": "take",
+  "timestamp": "2026-09-09T03:16:30Z",
+  "sender": "central",
+  "cycleId": "cycle-9431",
+  "data": {
+    "target": "665f51af-52df-46de-9958-a217d7aa188a",
+    "energy": 1000,
+    "pricePerEnergy": 210
+  }
+}

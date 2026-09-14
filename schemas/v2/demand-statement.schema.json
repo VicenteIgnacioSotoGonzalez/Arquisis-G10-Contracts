@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Demand Statement",
+
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/centralEnvelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "cycleId",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "demand-statement"
+        },
+
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "balance"
+          ],
+          "properties": {
+            "balance": {
+              "type": "object",
+              "required": [
+                "quantity",
+                "valuePerKwh"
+              ],
+              "properties": {
+                "quantity": {
+                  "type": "number"
+                },
+                "valuePerKwh": {
+                  "type": "number"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

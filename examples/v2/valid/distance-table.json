@@ -1,0 +1,21 @@
+{
+  "idpk": "154e5094-ea43-4d37-b44f-710aa91f6ca6",
+  "msgId": "8de7250d-2dc4-4554-9088-a336168b1204",
+  "type": "distance-table",
+  "timestamp": "2026-09-09T03:25:00Z",
+  "cityId": "COR",
+  "data": {
+    "distances": {
+      "HGW": {
+        "distance": 62763183,
+        "transportCost": 0.0034,
+        "enabled": true
+      },
+      "TAR": {
+        "distance": 94306517,
+        "transportCost": 0.0013,
+        "enabled": true
+      }
+    }
+  }
+}

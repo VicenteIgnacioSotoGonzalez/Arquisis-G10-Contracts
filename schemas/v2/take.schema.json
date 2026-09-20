@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Take Confirmation",
+
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/centralEnvelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "cycleId",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "take"
+        },
+
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "target",
+            "energy",
+            "pricePerEnergy"
+          ],
+          "properties": {
+            "target": {
+              "$ref": "common.schema.json#/$defs/uuid"
+            },
+
+            "energy": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+
+            "pricePerEnergy": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

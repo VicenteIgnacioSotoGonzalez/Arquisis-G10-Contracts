@@ -1,0 +1,16 @@
+{
+  "idpk": "8f5f32f8-9a57-4753-8ee1-d5af0105df42",
+  "msgId": "2a0cdaec-7ddc-4e63-91e9-49974e8d9ee8",
+  "type": "status-statement",
+  "timestamp": "2026-09-09T03:00:00Z",
+  "sender": "central",
+  "cycleId": "cycle-9431",
+  "data": {
+    "energy": {
+      "generationCapacity": 1234512,
+      "consumption": 1444121,
+      "generationCost": 210
+    },
+    "validUntil": "2026-09-09T03:20:00Z"
+  }
+}

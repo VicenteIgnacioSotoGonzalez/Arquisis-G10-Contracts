@@ -1,0 +1,10 @@
+{
+  "idpk": "31d829b4-8f97-4303-9e7c-9bfce258711a",
+  "msgId": "e670733b-557e-4382-a4d7-cc3032db234f",
+  "type": "ack",
+  "timestamp": "2026-09-09T03:21:00Z",
+  "cityId": "COR",
+  "data": {
+    "target": "54cd98ab-846c-4817-a2da-6aa96fefec19"
+  }
+}

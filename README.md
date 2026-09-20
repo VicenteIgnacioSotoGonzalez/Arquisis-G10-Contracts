@@ -1,8 +1,636 @@
 # Arquisis-G10-Contracts
 
-Repositorio de contratos compartidos del Grupo 10 para EnergyShark.
+Este repo tiene los contratos utilizados por los componentes del sistema para tener una definición común de los mensajes del protocolo y, posteriormente, de la API HTTP del backend.
+
+Este repo responde al requisito **RDOC04** de la E1, que pide un repositorio de contratos a nivel de organización que contenga los schemas de los mensajes de la mecánica y la especificación OpenAPI de la API propia.
 
 ## Contenido
 
-- `schemas/`: Schemas de los mensajes del protocolo.
-- `openapi/`: Especificación OpenAPI de la API del backend.
+```text
+.
+├── schemas/
+│   └── v2/
+│       ├── common.schema.json
+│       ├── ack.schema.json
+│       ├── nack.schema.json
+│       ├── error.schema.json
+│       ├── request.schema.json
+│       ├── status-statement.schema.json
+│       ├── transfer.schema.json
+│       ├── demand-statement.schema.json
+│       ├── negotiation-proposal.schema.json
+│       ├── give.schema.json
+│       ├── take.schema.json
+│       ├── negotiation-report.schema.json
+│       └── distance-table.schema.json
+│
+├── examples/
+│   └── v2/
+│       └── valid/
+│           ├── ack-city.json
+│           ├── demand-statement.json
+│           ├── demand-statement-negative.json
+│           ├── distance-table.json
+│           ├── error-over-capacity.json
+│           ├── give.json
+│           ├── nack.json
+│           ├── negotiation-proposal-give.json
+│           ├── negotiation-proposal-take.json
+│           ├── negotiation-report.json
+│           ├── request.json
+│           ├── status-statement.json
+│           ├── take.json
+│           ├── transfer.json
+│           └── transfer-payment.json
+│
+└── openapi/
+```
+
+- [`schemas/v2/`](schemas/v2/): Schemas JSON de los mensajes del protocolo E1.
+- [`examples/v2/valid/`](examples/v2/valid/): Ejemplos de mensajes válidos utilizados para probar los schemas.
+- [`openapi/`](openapi/): Espacio destinado a la especificación OpenAPI de la API del backend.
+
+## Schema común
+
+El archivo [`common.schema.json`](schemas/v2/common.schema.json) contiene definiciones reutilizadas por los demás contratos.
+
+Entre ellas se encuentran:
+
+### UUID
+
+```json
+{
+  "type": "string",
+  "format": "uuid"
+}
+```
+
+Se utiliza para validar campos como:
+
+- `idpk`
+- `msgId`
+- `data.target`
+- `data.becauseOf`
+
+### Timestamp
+
+Los timestamps se validan utilizando el formato `date-time`.
+
+Ejemplo:
+
+```json
+"timestamp": "2026-09-09T03:00:00Z"
+```
+
+### City code
+
+Los códigos de ciudades permitidos por la E1 están definidos como un `enum`.
+
+### Base envelope
+
+`baseEnvelope` exige:
+
+```text
+idpk
+msgId
+type
+timestamp
+```
+
+A partir de este envelope se construyen dos variantes principales.
+
+### City envelope
+
+Un mensaje emitido por una ciudad debe incluir:
+
+```json
+"cityId": "COR"
+```
+
+### Central envelope
+
+Un mensaje emitido por la central debe incluir:
+
+```json
+"sender": "central"
+```
+
+---
+
+# Schemas implementados
+
+## status-statement
+
+Schema:
+
+[`schemas/v2/status-statement.schema.json`](schemas/v2/status-statement.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/status-statement.json`](examples/v2/valid/status-statement.json)
+
+Representa el estado energético informado por la central para un ciclo.
+
+Se estandarizaron los campos:
+
+```text
+cycleId
+data.energy.generationCapacity
+data.energy.consumption
+data.energy.generationCost
+data.validUntil
+```
+
+El mensaje hereda de `centralEnvelope`, debido a que es emitido por la central.
+
+---
+
+## transfer
+
+Schema:
+
+[`schemas/v2/transfer.schema.json`](schemas/v2/transfer.schema.json)
+
+Ejemplos:
+
+- [`examples/v2/valid/transfer.json`](examples/v2/valid/transfer.json)
+- [`examples/v2/valid/transfer-payment.json`](examples/v2/valid/transfer-payment.json)
+
+El protocolo utiliza `transfer` en varios contextos.
+
+### Transferencia desde la central
+
+Ejemplo:
+
+```json
+{
+  "data": {
+    "quantity": 50000
+  }
+}
+```
+
+Puede representar, por ejemplo, los fondos entregados por la central.
+
+### Pago de una negociación
+
+Un transfer asociado a una confirmación puede incluir:
+
+```json
+{
+  "data": {
+    "becauseOf": "uuid",
+    "quantity": 435160
+  }
+}
+```
+
+`becauseOf` permite relacionar el pago con el mensaje de confirmación que lo originó.
+
+Por esto, el schema permite un envelope emitido por la central y uno emitido por una ciudad.
+
+---
+
+## demand-statement
+
+Schema:
+
+[`schemas/v2/demand-statement.schema.json`](schemas/v2/demand-statement.schema.json)
+
+Ejemplos:
+
+- [`examples/v2/valid/demand-statement.json`](examples/v2/valid/demand-statement.json)
+- [`examples/v2/valid/demand-statement-negative.json`](examples/v2/valid/demand-statement-negative.json)
+
+Se estandariza:
+
+```text
+cycleId
+data.balance.quantity
+data.balance.valuePerKwh
+```
+
+El enunciado dice expresamente que `quantity` puede ser tanto positiva como negativa.
+
+Por ello el schema define:
+
+```json
+"quantity": {
+  "type": "number"
+}
+```
+
+---
+
+## negotiation-proposal
+
+Schema:
+
+[`schemas/v2/negotiation-proposal.schema.json`](schemas/v2/negotiation-proposal.schema.json)
+
+Ejemplos:
+
+- [`examples/v2/valid/negotiation-proposal-take.json`](examples/v2/valid/negotiation-proposal-take.json)
+- [`examples/v2/valid/negotiation-proposal-give.json`](examples/v2/valid/negotiation-proposal-give.json)
+
+Las propuestas voluntarias contienen:
+
+```text
+cycleId
+data.direction
+data.quantity
+data.pricePerEnergy
+```
+
+`direction` se restringe a:
+
+```json
+[
+  "take",
+  "give"
+]
+```
+
+La cantidad se exige mayor que cero.
+
+---
+
+## give
+
+Schema:
+
+[`schemas/v2/give.schema.json`](schemas/v2/give.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/give.json`](examples/v2/valid/give.json)
+
+Representa una confirmación de una operación de salida de energía.
+
+Contiene:
+
+```text
+cycleId
+data.target
+data.energy
+data.pricePerEnergy
+```
+
+`target` referencia mediante UUID el `msgId` de la propuesta original.
+
+---
+
+## take
+
+Schema:
+
+[`schemas/v2/take.schema.json`](schemas/v2/take.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/take.json`](examples/v2/valid/take.json)
+
+Representa una confirmación de una operación de entrada de energía.
+
+Al igual que `give`, contiene:
+
+```text
+cycleId
+data.target
+data.energy
+data.pricePerEnergy
+```
+
+---
+
+## negotiation-report
+
+Schema:
+
+[`schemas/v2/negotiation-report.schema.json`](schemas/v2/negotiation-report.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/negotiation-report.json`](examples/v2/valid/negotiation-report.json)
+
+Corresponde al reporte enviado por la ciudad a la central al cierre de la ventana de negociación.
+
+Se estandarizan:
+
+```text
+cycleId
+data.budgetBalance
+data.energyBalance
+```
+
+El enunciado permite estados negativos, y eso se permite en estos escenarios.
+
+---
+
+## request
+
+Schema:
+
+[`schemas/v2/request.schema.json`](schemas/v2/request.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/request.json`](examples/v2/valid/request.json)
+
+Permite solicitar directamente información emitida por la central.
+
+Su contenido tiene la forma:
+
+```json
+{
+  "data": {
+    "ask": "status-statement"
+  }
+}
+```
+
+Se entregan como ejemplos `status-statement` y `distance-table`, pero no se especifica una lista de valores posibles. Por eso, `ask` se mantiene como un string no vacío en vez de restringirlo mediante un `enum` explícito.
+
+---
+
+# ACK, NACK y error
+
+Se diferencia entre:
+
+- recepción correcta
+- rechazo del mensaje
+- rechazo de una operación válida.
+
+---
+
+## ACK
+
+Schema:
+
+[`schemas/v2/ack.schema.json`](schemas/v2/ack.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/ack-city.json`](examples/v2/valid/ack-city.json)
+
+Un ACK contiene:
+
+```json
+{
+  "type": "ack",
+  "data": {
+    "target": "uuid"
+  }
+}
+```
+
+`target` corresponde al `msgId` del mensaje que está siendo reconocido. 
+
+El schema permite que un ACK sea emitido tanto por una ciudad como por la central.
+
+---
+
+## NACK
+
+Schema:
+
+[`schemas/v2/nack.schema.json`](schemas/v2/nack.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/nack.json`](examples/v2/valid/nack.json)
+
+Un NACK representa el rechazo de un mensaje que no cumple el protocolo.
+
+El enunciado define las siguientes combinaciones o códigos:
+
+| reason | code |
+|---|---:|
+| `MALFORMED_MESSAGE` | 422 |
+| `UNKNOWN_TYPE` | 400 |
+| `IDPK_EQUALS_MSGID` | 422 |
+| `IDENTITY_MISMATCH` | 403 |
+
+Se valida además que la combinación entre ambos sea correcta, en el sentido de que el reason y code coincidan.
+
+Por ejemplo:
+
+```json
+{
+  "reason": "UNKNOWN_TYPE",
+  "code": 400
+}
+```
+
+es válido, mientras que:
+
+```json
+{
+  "reason": "UNKNOWN_TYPE",
+  "code": 422
+}
+```
+
+no.
+
+Dentro de `data` se estandarizan:
+
+```text
+target
+message
+cycleId (opcional)
+```
+
+---
+
+## Error
+
+Schema:
+
+[`schemas/v2/error.schema.json`](schemas/v2/error.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/error-over-capacity.json`](examples/v2/valid/error-over-capacity.json)
+
+Un `error` es diferente de un NACK.
+
+A diferencia de una NACK, un `error` indica que el mensaje fue recibido y entendido, pero la operación solicitada no puede ejecutarse.
+
+Se modelaron las razones definidas:
+
+| reason | code |
+|---|---:|
+| `CYCLE_UNKNOWN` | 404 |
+| `CYCLE_EXPIRED` | 410 |
+| `PRICE_ABOVE_CAP` | 422 |
+| `OVER_CAPACITY` | 409 |
+
+Además:
+
+- `PRICE_ABOVE_CAP` requiere `data.cap`.
+- `OVER_CAPACITY` requiere `data.spare`.
+
+Ejemplo:
+
+```json
+{
+  "reason": "OVER_CAPACITY",
+  "code": 409,
+  "data": {
+    "target": "uuid",
+    "message": "give excede la capacidad vendible restante",
+    "spare": 320
+  }
+}
+```
+
+---
+
+## distance-table
+
+Schema:
+
+[`schemas/v2/distance-table.schema.json`](schemas/v2/distance-table.schema.json)
+
+Ejemplo:
+
+[`examples/v2/valid/distance-table.json`](examples/v2/valid/distance-table.json)
+
+Cada destino de la tabla contiene:
+
+```text
+distance
+transportCost
+enabled
+```
+
+Por ejemplo:
+
+```json
+{
+  "HGW": {
+    "distance": 62763183,
+    "transportCost": 0.0034,
+    "enabled": true
+  }
+}
+```
+
+### Inconsistencias de distance-table
+
+Existe una inconsistencia entre la regla del protocolo y el ejemplo de `distance-table`. La regla establece que un mensaje de la central debe utilizar:
+
+```json
+"sender": "central"
+```
+
+y no `cityId`.
+
+Sin embargo, el ejemplo de `distance-table` del enunciado muestra:
+
+```json
+"cityId": "COR",
+"type": "distance-table"
+```
+
+Para tener en consideración ambas versiones que dice el enunciado, el schema acepta tanto una variante identificada mediante `cityId` como una variante identificada mediante `sender: "central"`.
+
+---
+
+### Inconsistencia sobre PRICE_ABOVE_CAP
+
+La definición de errores clasifica `PRICE_ABOVE_CAP` como un mensaje de tipo `error` con código `422`. Sin embargo, después el ejemplo de este caso utiliza `"type": "nack"`. Para este contrato se siguió la definición general del protocolo, por lo que `PRICE_ABOVE_CAP` se modela como `error`.
+
+# Prueba y validación de los schemas
+
+Los contratos fueron probados utilizando `check-jsonschema`. La herramienta fue ejecutada dentro de un entorno virtual de Python.
+
+## Crear el entorno virtual
+
+Desde la raíz del repositorio:
+
+```bash
+python3 -m venv .venv
+```
+
+Activarlo:
+
+```bash
+source .venv/bin/activate
+```
+
+## Instalar el validador
+
+Con el entorno virtual activo, se hace:
+
+```bash
+pip install check-jsonschema
+```
+## Validaciones ejecutadas
+
+Se probaron los siguientes pares:
+
+```bash
+check-jsonschema \
+  --schemafile schemas/v2/status-statement.schema.json \
+  examples/v2/valid/status-statement.json
+
+check-jsonschema \
+  --schemafile schemas/v2/transfer.schema.json \
+  examples/v2/valid/transfer.json
+
+check-jsonschema \
+  --schemafile schemas/v2/transfer.schema.json \
+  examples/v2/valid/transfer-payment.json
+
+check-jsonschema \
+  --schemafile schemas/v2/demand-statement.schema.json \
+  examples/v2/valid/demand-statement.json
+
+check-jsonschema \
+  --schemafile schemas/v2/demand-statement.schema.json \
+  examples/v2/valid/demand-statement-negative.json
+
+check-jsonschema \
+  --schemafile schemas/v2/negotiation-proposal.schema.json \
+  examples/v2/valid/negotiation-proposal-take.json
+
+check-jsonschema \
+  --schemafile schemas/v2/negotiation-proposal.schema.json \
+  examples/v2/valid/negotiation-proposal-give.json
+
+check-jsonschema \
+  --schemafile schemas/v2/give.schema.json \
+  examples/v2/valid/give.json
+
+check-jsonschema \
+  --schemafile schemas/v2/take.schema.json \
+  examples/v2/valid/take.json
+
+check-jsonschema \
+  --schemafile schemas/v2/negotiation-report.schema.json \
+  examples/v2/valid/negotiation-report.json
+
+check-jsonschema \
+  --schemafile schemas/v2/request.schema.json \
+  examples/v2/valid/request.json
+
+check-jsonschema \
+  --schemafile schemas/v2/ack.schema.json \
+  examples/v2/valid/ack-city.json
+
+check-jsonschema \
+  --schemafile schemas/v2/nack.schema.json \
+  examples/v2/valid/nack.json
+
+check-jsonschema \
+  --schemafile schemas/v2/error.schema.json \
+  examples/v2/valid/error-over-capacity.json
+
+check-jsonschema \
+  --schemafile schemas/v2/distance-table.schema.json \
+  examples/v2/valid/distance-table.json
+```
+
+Además de probar ejemplos que se consideran correctos, se hicieron pruebas negativas para comprobar que los schemas pudiesen rechazar mensajes que no cumplen el contrato. Por dar un ejemplo, se eliminó temporalmente `cycleId` de un `status-statement` y la validación falló indicando que se trataba de una propiedad obligatoria. También se probó un `msgId` con formato UUID inválido, y `check-jsonschema` lo rechazó.

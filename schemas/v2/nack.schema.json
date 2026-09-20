@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - NACK",
+
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/cityEnvelope"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/centralEnvelope"
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "reason",
+        "code",
+        "data"
+      ],
+
+      "properties": {
+        "type": {
+          "const": "nack"
+        },
+
+        "reason": {
+          "type": "string"
+        },
+
+        "code": {
+          "type": "integer"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "target",
+            "message"
+          ],
+
+          "properties": {
+            "target": {
+              "$ref": "common.schema.json#/$defs/uuid"
+            },
+
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+
+            "cycleId": {
+              "$ref": "common.schema.json#/$defs/cycleId"
+            }
+          },
+
+          "additionalProperties": false
+        }
+      },
+
+      "oneOf": [
+        {
+          "properties": {
+            "reason": {
+              "const": "MALFORMED_MESSAGE"
+            },
+            "code": {
+              "const": 422
+            }
+          }
+        },
+        {
+          "properties": {
+            "reason": {
+              "const": "UNKNOWN_TYPE"
+            },
+            "code": {
+              "const": 400
+            }
+          }
+        },
+        {
+          "properties": {
+            "reason": {
+              "const": "IDPK_EQUALS_MSGID"
+            },
+            "code": {
+              "const": 422
+            }
+          }
+        },
+        {
+          "properties": {
+            "reason": {
+              "const": "IDENTITY_MISMATCH"
+            },
+            "code": {
+              "const": 403
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

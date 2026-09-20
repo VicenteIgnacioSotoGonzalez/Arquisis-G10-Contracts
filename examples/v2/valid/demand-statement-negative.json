@@ -1,0 +1,14 @@
+{
+  "idpk": "13d8ef51-f37a-4cde-8f0c-190e227814f9",
+  "msgId": "2af24c83-d524-46ba-a790-f811b816e972",
+  "type": "demand-statement",
+  "timestamp": "2026-09-09T03:10:00Z",
+  "sender": "central",
+  "cycleId": "cycle-9431",
+  "data": {
+    "balance": {
+      "quantity": -1500,
+      "valuePerKwh": 210
+    }
+  }
+}

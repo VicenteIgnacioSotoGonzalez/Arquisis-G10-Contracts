@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Transfer",
+
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/centralEnvelope"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/cityEnvelope"
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "cycleId",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "transfer"
+        },
+
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "quantity"
+          ],
+          "properties": {
+            "quantity": {
+              "type": "number"
+            },
+
+            "becauseOf": {
+              "$ref": "common.schema.json#/$defs/uuid"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

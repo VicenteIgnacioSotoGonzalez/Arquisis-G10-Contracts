@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - ACK",
+
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/cityEnvelope"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/centralEnvelope"
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "ack"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "target"
+          ],
+          "properties": {
+            "target": {
+              "$ref": "common.schema.json#/$defs/uuid"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

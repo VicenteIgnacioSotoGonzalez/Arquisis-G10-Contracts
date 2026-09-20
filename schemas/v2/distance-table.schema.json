@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Distance Table",
+
+  "allOf": [
+    {
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/cityEnvelope"
+        },
+        {
+          "$ref": "common.schema.json#/$defs/centralEnvelope"
+        }
+      ]
+    },
+    {
+      "type": "object",
+      "required": [
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "distance-table"
+        },
+
+        "cityId": {
+          "$ref": "common.schema.json#/$defs/cityCode"
+        },
+
+        "sender": {
+          "const": "central"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "distances"
+          ],
+          "properties": {
+            "distances": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "required": [
+                  "distance",
+                  "transportCost",
+                  "enabled"
+                ],
+                "properties": {
+                  "distance": {
+                    "type": "number"
+                  },
+
+                  "transportCost": {
+                    "type": "number"
+                  },
+
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

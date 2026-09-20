@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EnergyShark Protocol v2 - Negotiation Proposal",
+
+  "allOf": [
+    {
+      "$ref": "common.schema.json#/$defs/cityEnvelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "cycleId",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "const": "negotiation-proposal"
+        },
+
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
+        },
+
+        "data": {
+          "type": "object",
+          "required": [
+            "direction",
+            "quantity",
+            "pricePerEnergy"
+          ],
+          "properties": {
+            "direction": {
+              "type": "string",
+              "enum": [
+                "take",
+                "give"
+              ]
+            },
+
+            "quantity": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+
+            "pricePerEnergy": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ]
+}

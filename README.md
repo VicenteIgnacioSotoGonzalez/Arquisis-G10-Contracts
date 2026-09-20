@@ -8,7 +8,7 @@ Este repo responde al requisito **RDOC04** de la E1, que pide un repositorio de 
 
 ```text
 .
-├── schemas/
+├── docs/schemas/
 │   └── v2/
 │       ├── common.schema.json
 │       ├── ack.schema.json
@@ -24,7 +24,7 @@ Este repo responde al requisito **RDOC04** de la E1, que pide un repositorio de 
 │       ├── negotiation-report.schema.json
 │       └── distance-table.schema.json
 │
-├── examples/
+├── docs/examples/
 │   └── v2/
 │       └── valid/
 │           ├── ack-city.json
@@ -43,16 +43,16 @@ Este repo responde al requisito **RDOC04** de la E1, que pide un repositorio de 
 │           ├── transfer.json
 │           └── transfer-payment.json
 │
-└── openapi/
+└── docs/openapi/
 ```
 
-- [`schemas/v2/`](schemas/v2/): Schemas JSON de los mensajes del protocolo E1.
-- [`examples/v2/valid/`](examples/v2/valid/): Ejemplos de mensajes válidos utilizados para probar los schemas.
-- [`openapi/`](openapi/): Espacio destinado a la especificación OpenAPI de la API del backend.
+- [`docs/schemas/v2/`](docs/schemas/v2/): Schemas JSON de los mensajes del protocolo E1.
+- [`docs/examples/v2/valid/`](docs/examples/v2/valid/): Ejemplos de mensajes válidos utilizados para probar los schemas.
+- [`docs/openapi/`](docs/openapi/): Espacio destinado a la especificación OpenAPI de la API del backend.
 
 ## Schema común
 
-El archivo [`common.schema.json`](schemas/v2/common.schema.json) contiene definiciones reutilizadas por los demás contratos.
+El archivo [`common.schema.json`](docs/schemas/v2/common.schema.json) contiene definiciones reutilizadas por los demás contratos.
 
 Entre ellas se encuentran:
 
@@ -123,11 +123,11 @@ Un mensaje emitido por la central debe incluir:
 
 Schema:
 
-[`schemas/v2/status-statement.schema.json`](schemas/v2/status-statement.schema.json)
+[`docs/schemas/v2/status-statement.schema.json`](docs/schemas/v2/status-statement.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/status-statement.json`](examples/v2/valid/status-statement.json)
+[`docs/examples/v2/valid/status-statement.json`](docs/examples/v2/valid/status-statement.json)
 
 Representa el estado energético informado por la central para un ciclo.
 
@@ -149,12 +149,12 @@ El mensaje hereda de `centralEnvelope`, debido a que es emitido por la central.
 
 Schema:
 
-[`schemas/v2/transfer.schema.json`](schemas/v2/transfer.schema.json)
+[`docs/schemas/v2/transfer.schema.json`](docs/schemas/v2/transfer.schema.json)
 
 Ejemplos:
 
-- [`examples/v2/valid/transfer.json`](examples/v2/valid/transfer.json)
-- [`examples/v2/valid/transfer-payment.json`](examples/v2/valid/transfer-payment.json)
+- [`docs/examples/v2/valid/transfer.json`](docs/examples/v2/valid/transfer.json)
+- [`docs/examples/v2/valid/transfer-payment.json`](docs/examples/v2/valid/transfer-payment.json)
 
 El protocolo utiliza `transfer` en varios contextos.
 
@@ -195,12 +195,12 @@ Por esto, el schema permite un envelope emitido por la central y uno emitido por
 
 Schema:
 
-[`schemas/v2/demand-statement.schema.json`](schemas/v2/demand-statement.schema.json)
+[`docs/schemas/v2/demand-statement.schema.json`](docs/schemas/v2/demand-statement.schema.json)
 
 Ejemplos:
 
-- [`examples/v2/valid/demand-statement.json`](examples/v2/valid/demand-statement.json)
-- [`examples/v2/valid/demand-statement-negative.json`](examples/v2/valid/demand-statement-negative.json)
+- [`docs/examples/v2/valid/demand-statement.json`](docs/examples/v2/valid/demand-statement.json)
+- [`docs/examples/v2/valid/demand-statement-negative.json`](docs/examples/v2/valid/demand-statement-negative.json)
 
 Se estandariza:
 
@@ -226,12 +226,12 @@ Por ello el schema define:
 
 Schema:
 
-[`schemas/v2/negotiation-proposal.schema.json`](schemas/v2/negotiation-proposal.schema.json)
+[`docs/schemas/v2/negotiation-proposal.schema.json`](docs/schemas/v2/negotiation-proposal.schema.json)
 
 Ejemplos:
 
-- [`examples/v2/valid/negotiation-proposal-take.json`](examples/v2/valid/negotiation-proposal-take.json)
-- [`examples/v2/valid/negotiation-proposal-give.json`](examples/v2/valid/negotiation-proposal-give.json)
+- [`docs/examples/v2/valid/negotiation-proposal-take.json`](docs/examples/v2/valid/negotiation-proposal-take.json)
+- [`docs/examples/v2/valid/negotiation-proposal-give.json`](docs/examples/v2/valid/negotiation-proposal-give.json)
 
 Las propuestas voluntarias contienen:
 
@@ -259,11 +259,11 @@ La cantidad se exige mayor que cero.
 
 Schema:
 
-[`schemas/v2/give.schema.json`](schemas/v2/give.schema.json)
+[`docs/schemas/v2/give.schema.json`](docs/schemas/v2/give.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/give.json`](examples/v2/valid/give.json)
+[`docs/examples/v2/valid/give.json`](docs/examples/v2/valid/give.json)
 
 Representa una confirmación de una operación de salida de energía.
 
@@ -284,11 +284,11 @@ data.pricePerEnergy
 
 Schema:
 
-[`schemas/v2/take.schema.json`](schemas/v2/take.schema.json)
+[`docs/schemas/v2/take.schema.json`](docs/schemas/v2/take.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/take.json`](examples/v2/valid/take.json)
+[`docs/examples/v2/valid/take.json`](docs/examples/v2/valid/take.json)
 
 Representa una confirmación de una operación de entrada de energía.
 
@@ -307,11 +307,11 @@ data.pricePerEnergy
 
 Schema:
 
-[`schemas/v2/negotiation-report.schema.json`](schemas/v2/negotiation-report.schema.json)
+[`docs/schemas/v2/negotiation-report.schema.json`](docs/schemas/v2/negotiation-report.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/negotiation-report.json`](examples/v2/valid/negotiation-report.json)
+[`docs/examples/v2/valid/negotiation-report.json`](docs/examples/v2/valid/negotiation-report.json)
 
 Corresponde al reporte enviado por la ciudad a la central al cierre de la ventana de negociación.
 
@@ -331,11 +331,11 @@ El enunciado permite estados negativos, y eso se permite en estos escenarios.
 
 Schema:
 
-[`schemas/v2/request.schema.json`](schemas/v2/request.schema.json)
+[`docs/schemas/v2/request.schema.json`](docs/schemas/v2/request.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/request.json`](examples/v2/valid/request.json)
+[`docs/examples/v2/valid/request.json`](docs/examples/v2/valid/request.json)
 
 Permite solicitar directamente información emitida por la central.
 
@@ -367,11 +367,11 @@ Se diferencia entre:
 
 Schema:
 
-[`schemas/v2/ack.schema.json`](schemas/v2/ack.schema.json)
+[`docs/schemas/v2/ack.schema.json`](docs/schemas/v2/ack.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/ack-city.json`](examples/v2/valid/ack-city.json)
+[`docs/examples/v2/valid/ack-city.json`](docs/examples/v2/valid/ack-city.json)
 
 Un ACK contiene:
 
@@ -394,11 +394,11 @@ El schema permite que un ACK sea emitido tanto por una ciudad como por la centra
 
 Schema:
 
-[`schemas/v2/nack.schema.json`](schemas/v2/nack.schema.json)
+[`docs/schemas/v2/nack.schema.json`](docs/schemas/v2/nack.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/nack.json`](examples/v2/valid/nack.json)
+[`docs/examples/v2/valid/nack.json`](docs/examples/v2/valid/nack.json)
 
 Un NACK representa el rechazo de un mensaje que no cumple el protocolo.
 
@@ -447,11 +447,11 @@ cycleId (opcional)
 
 Schema:
 
-[`schemas/v2/error.schema.json`](schemas/v2/error.schema.json)
+[`docs/schemas/v2/error.schema.json`](docs/schemas/v2/error.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/error-over-capacity.json`](examples/v2/valid/error-over-capacity.json)
+[`docs/examples/v2/valid/error-over-capacity.json`](docs/examples/v2/valid/error-over-capacity.json)
 
 Un `error` es diferente de un NACK.
 
@@ -491,11 +491,11 @@ Ejemplo:
 
 Schema:
 
-[`schemas/v2/distance-table.schema.json`](schemas/v2/distance-table.schema.json)
+[`docs/schemas/v2/distance-table.schema.json`](docs/schemas/v2/distance-table.schema.json)
 
 Ejemplo:
 
-[`examples/v2/valid/distance-table.json`](examples/v2/valid/distance-table.json)
+[`docs/examples/v2/valid/distance-table.json`](docs/examples/v2/valid/distance-table.json)
 
 Cada destino de la tabla contiene:
 
@@ -573,64 +573,64 @@ Se probaron los siguientes pares:
 
 ```bash
 check-jsonschema \
-  --schemafile schemas/v2/status-statement.schema.json \
-  examples/v2/valid/status-statement.json
+  --schemafile docs/schemas/v2/status-statement.schema.json \
+  docs/examples/v2/valid/status-statement.json
 
 check-jsonschema \
-  --schemafile schemas/v2/transfer.schema.json \
-  examples/v2/valid/transfer.json
+  --schemafile docs/schemas/v2/transfer.schema.json \
+  docs/examples/v2/valid/transfer.json
 
 check-jsonschema \
-  --schemafile schemas/v2/transfer.schema.json \
-  examples/v2/valid/transfer-payment.json
+  --schemafile docs/schemas/v2/transfer.schema.json \
+  docs/examples/v2/valid/transfer-payment.json
 
 check-jsonschema \
-  --schemafile schemas/v2/demand-statement.schema.json \
-  examples/v2/valid/demand-statement.json
+  --schemafile docs/schemas/v2/demand-statement.schema.json \
+  docs/examples/v2/valid/demand-statement.json
 
 check-jsonschema \
-  --schemafile schemas/v2/demand-statement.schema.json \
-  examples/v2/valid/demand-statement-negative.json
+  --schemafile docs/schemas/v2/demand-statement.schema.json \
+  docs/examples/v2/valid/demand-statement-negative.json
 
 check-jsonschema \
-  --schemafile schemas/v2/negotiation-proposal.schema.json \
-  examples/v2/valid/negotiation-proposal-take.json
+  --schemafile docs/schemas/v2/negotiation-proposal.schema.json \
+  docs/examples/v2/valid/negotiation-proposal-take.json
 
 check-jsonschema \
-  --schemafile schemas/v2/negotiation-proposal.schema.json \
-  examples/v2/valid/negotiation-proposal-give.json
+  --schemafile docs/schemas/v2/negotiation-proposal.schema.json \
+  docs/examples/v2/valid/negotiation-proposal-give.json
 
 check-jsonschema \
-  --schemafile schemas/v2/give.schema.json \
-  examples/v2/valid/give.json
+  --schemafile docs/schemas/v2/give.schema.json \
+  docs/examples/v2/valid/give.json
 
 check-jsonschema \
-  --schemafile schemas/v2/take.schema.json \
-  examples/v2/valid/take.json
+  --schemafile docs/schemas/v2/take.schema.json \
+  docs/examples/v2/valid/take.json
 
 check-jsonschema \
-  --schemafile schemas/v2/negotiation-report.schema.json \
-  examples/v2/valid/negotiation-report.json
+  --schemafile docs/schemas/v2/negotiation-report.schema.json \
+  docs/examples/v2/valid/negotiation-report.json
 
 check-jsonschema \
-  --schemafile schemas/v2/request.schema.json \
-  examples/v2/valid/request.json
+  --schemafile docs/schemas/v2/request.schema.json \
+  docs/examples/v2/valid/request.json
 
 check-jsonschema \
-  --schemafile schemas/v2/ack.schema.json \
-  examples/v2/valid/ack-city.json
+  --schemafile docs/schemas/v2/ack.schema.json \
+  docs/examples/v2/valid/ack-city.json
 
 check-jsonschema \
-  --schemafile schemas/v2/nack.schema.json \
-  examples/v2/valid/nack.json
+  --schemafile docs/schemas/v2/nack.schema.json \
+  docs/examples/v2/valid/nack.json
 
 check-jsonschema \
-  --schemafile schemas/v2/error.schema.json \
-  examples/v2/valid/error-over-capacity.json
+  --schemafile docs/schemas/v2/error.schema.json \
+  docs/examples/v2/valid/error-over-capacity.json
 
 check-jsonschema \
-  --schemafile schemas/v2/distance-table.schema.json \
-  examples/v2/valid/distance-table.json
+  --schemafile docs/schemas/v2/distance-table.schema.json \
+  docs/examples/v2/valid/distance-table.json
 ```
 
 Además de probar ejemplos que se consideran correctos, se hicieron pruebas negativas para comprobar que los schemas pudiesen rechazar mensajes que no cumplen el contrato. Por dar un ejemplo, se eliminó temporalmente `cycleId` de un `status-statement` y la validación falló indicando que se trataba de una propiedad obligatoria. También se probó un `msgId` con formato UUID inválido, y `check-jsonschema` lo rechazó.

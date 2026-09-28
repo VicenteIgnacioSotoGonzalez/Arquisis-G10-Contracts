@@ -44,11 +44,35 @@ Este repo responde al requisito **RDOC04** de la E1, que pide un repositorio de 
 │           └── transfer-payment.json
 │
 └── docs/openapi/
+    └── openapi.yaml
 ```
 
 - [`docs/schemas/v2/`](docs/schemas/v2/): Schemas JSON de los mensajes del protocolo E1.
 - [`docs/examples/v2/valid/`](docs/examples/v2/valid/): Ejemplos de mensajes válidos utilizados para probar los schemas.
-- [`docs/openapi/`](docs/openapi/): Espacio destinado a la especificación OpenAPI de la API del backend.
+- [`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml): Especificación OpenAPI de la API HTTP pública del backend.
+
+## OpenAPI
+
+La especificación de la API HTTP pública del backend se encuentra en:
+
+[`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml)
+
+Este contrato documenta la interfaz utilizada por el frontend para:
+
+- consultar ciclos
+- consultar conectividad
+- consultar y crear negociaciones
+- consultar anomalías de mensajes.
+
+Las rutas internas utilizadas por `connector` y workers no forman parte de este contrato público.
+
+La autenticación de los endpoints protegidos utiliza access tokens JWT emitidos por Auth0 mediante el esquema:
+
+```text
+Authorization: Bearer <token>
+```
+
+Los contratos de `docs/schemas/v2/` y los ejemplos de `docs/examples/v2/valid/` corresponden al protocolo de mensajería entre los componentes del sistema, mientras que `docs/openapi/openapi.yaml` describe la API HTTP consumida por el frontend.
 
 ## Schema común
 

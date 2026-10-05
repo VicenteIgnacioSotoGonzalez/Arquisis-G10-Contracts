@@ -74,6 +74,62 @@ Authorization: Bearer <token>
 
 Los contratos de `docs/schemas/v2/` y los ejemplos de `docs/examples/v2/valid/` corresponden al protocolo de mensajería entre los componentes del sistema, mientras que `docs/openapi/openapi.yaml` describe la API HTTP consumida por el frontend.
 
+## API pública desplegada
+
+La implementación productiva de la API descrita por este contrato se encuentra disponible en:
+
+```text
+https://api.energyshark-g10.tech
+```
+
+El tráfico público llega al backend mediante AWS API Gateway.
+
+El flujo general es:
+
+```text
+Frontend
+   ↓
+AWS API Gateway
+   ↓
+API pública EnergyShark
+   ↓
+Backend
+```
+
+La infraestructura específica de despliegue se documenta en los repositorios correspondientes.
+
+---
+
+## Autenticación
+
+Las operaciones protegidas de la API utilizan access tokens JWT emitidos por Auth0.
+
+El cliente envía el token mediante:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+El audience utilizado por la API es:
+
+```text
+https://arquisis-e1-api/
+```
+
+Actualmente las operaciones de negociaciones son las que requieren autenticación:
+
+```text
+GET  /negotiations
+GET  /negotiations/{negotiation_id}
+POST /negotiations
+```
+
+La definición OpenAPI debe indicar mediante su `securityScheme` qué operaciones requieren Bearer JWT.
+
+La validación efectiva del JWT y la configuración del authorizer pertenecen a la infraestructura/backend y no se implementan en este repositorio.
+
+---
+
 ## Schema común
 
 El archivo [`common.schema.json`](docs/schemas/v2/common.schema.json) contiene definiciones reutilizadas por los demás contratos.

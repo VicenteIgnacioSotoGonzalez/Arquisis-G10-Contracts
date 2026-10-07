@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "EnergyShark Protocol v2 - Request",
-
   "allOf": [
     {
       "$ref": "common.schema.json#/$defs/cityEnvelope"
@@ -15,7 +14,6 @@
         "type": {
           "const": "request"
         },
-
         "data": {
           "type": "object",
           "required": [
@@ -29,6 +27,11 @@
           },
           "additionalProperties": false
         }
+      },
+      "not": {
+        "required": [
+          "cycleId"
+        ]
       }
     }
   ]

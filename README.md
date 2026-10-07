@@ -614,7 +614,7 @@ Sin embargo, el ejemplo de `distance-table` del enunciado muestra:
 "type": "distance-table"
 ```
 
-Para tener en consideración ambas versiones que dice el enunciado, el schema acepta tanto una variante identificada mediante `cityId` como una variante identificada mediante `sender: "central"`.
+La versión anterior aceptaba ambas representaciones. **Actualización 2026-10-07:** la especificación v2 transcrita exige `sender: "central"`; schema, ejemplo y connector requieren esa identidad. La evidencia productiva posterior confirma que cityId null y cycleId deben tolerarse; el schema de distance-table lo permite. Esta decisión reemplaza la compatibilidad anterior.
 
 ---
 
@@ -714,3 +714,19 @@ check-jsonschema \
 ```
 
 Además de probar ejemplos que se consideran correctos, se hicieron pruebas negativas para comprobar que los schemas pudiesen rechazar mensajes que no cumplen el contrato. Por dar un ejemplo, se eliminó temporalmente `cycleId` de un `status-statement` y la validación falló indicando que se trataba de una propiedad obligatoria. También se probó un `msgId` con formato UUID inválido, y `check-jsonschema` lo rechazó.
+
+## Compatibilidad E1 v2 — 2026-10-07
+
+- `request` no incluye cycleId; ask sigue siendo string abierto.
+- `distance-table` exige sender central y admite cityId ausente/null y cycleId opcional. El ejemplo reproduce la metadata productiva informada, con UUID y distancias ilustrativos. La excepción queda en su schema, sin modificar otros envelopes.
+- Los reportes requieren cycleId y cierre de un ciclo abierto por central. Retry conserva idpk; corrección usa ids nuevos. REPORT_TOO_EARLY acepta 422/425 y exige opensAt; CYCLE_EXPIRED es terminal.
+- PRICE_ABOVE_CAP se conserva como error 422, pese al ejemplo. penalty permanece opcional/opaco y no debe descontarse nuevamente.
+- OpenAPI incorpora historial/estado de reportes, negotiationOpen/validUntil y describe BUDGET_CARRYOVER. PUBLISHED y sentAt acreditan transporte, no aceptación.
+- AMQP user_id, idpk distinto de msgId, correlación, idempotencia y ventanas se comprueban en ejecución; JSON Schema individual no expresa esas invariantes.
+
+Validación de schemas, ejemplos válidos y rechazos esperados:
+
+```bash
+pip install 'jsonschema[format]'
+python -m unittest discover -s tests -v
+```

@@ -2,7 +2,7 @@
   "idpk": "154e5094-ea43-4d37-b44f-710aa91f6ca6",
   "msgId": "8de7250d-2dc4-4554-9088-a336168b1204",
   "type": "distance-table",
-  "timestamp": "2026-10-05T23:40:04.832000Z",
+  "timestamp": "2026-09-09T03:25:00Z",
   "data": {
     "distances": {
       "HGW": {
@@ -17,7 +17,5 @@
       }
     }
   },
-  "sender": "central",
-  "cityId": null,
-  "cycleId": "cycle-248784"
+  "cityId": "KLD"
 }

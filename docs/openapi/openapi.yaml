@@ -638,7 +638,9 @@ components:
             Tipo de operación del ledger.
             Valores actuales conocidos incluyen TRANSFER_IN,
             DEMAND_STATEMENT, GIVE_CONFIRMED, TAKE_CONFIRMED,
-            PAYMENT_RECEIVED y PAYMENT_SENT.
+            PAYMENT_RECEIVED, PAYMENT_SENT y BUDGET_CARRYOVER.
+            BUDGET_CARRYOVER traslada solo dinero; details identifica ciclo origen,
+            secuencia y ajuste aplicado, sin duplicar transferencias.
         budgetDelta:
           $ref: "#/components/schemas/DecimalString"
         energyDelta:
@@ -655,6 +657,7 @@ components:
           additionalProperties: true
 
     NegotiationReportOut:
+      description: Versión de reporte. PUBLISHED acredita publicación, no aceptación de la central.
       type: object
       required:
         - msgId
@@ -663,6 +666,13 @@ components:
         - energyBalance
         - createdAt
       properties:
+        status:
+          type: string
+          enum: [PENDING, PUBLISHED, DEFERRED, EXPIRED, REJECTED, SUPERSEDED]
+          default: PENDING
+        reason:
+          type: [string, "null"]
+          default: null
         msgId:
           type: string
         idpk:
@@ -691,6 +701,15 @@ components:
         - lastOperationAt
         - reported
       properties:
+        negotiationOpen:
+          type: boolean
+          default: false
+          description: La central abrió el ciclo y su ventana de negociación sigue vigente, incluido el periodo de cierre.
+        validUntil:
+          type: [string, "null"]
+          format: date-time
+          default: null
+          description: Cierre comunicado por la central; cycleId se mantiene opaco.
         cycleId:
           type: string
         budgetBalance:
@@ -742,6 +761,15 @@ components:
         - snapshotConsistent
         - ledger
       properties:
+        negotiationOpen:
+          type: boolean
+          default: false
+          description: La central abrió el ciclo y su ventana de negociación sigue vigente, incluido el periodo de cierre.
+        validUntil:
+          type: [string, "null"]
+          format: date-time
+          default: null
+          description: Cierre comunicado por la central; cycleId se mantiene opaco.
         cycleId:
           type: string
         statusStatement:
@@ -769,11 +797,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/NegotiationOut"
+        negotiationReports:
+          type: array
+          description: Historial de versiones en orden de creación; los retries conservan su operación.
+          items:
+            $ref: "#/components/schemas/NegotiationReportOut"
         negotiationReport:
+          description: Última versión local, incluidas correcciones; consultar status antes de interpretar sus balances.
           anyOf:
             - $ref: "#/components/schemas/NegotiationReportOut"
             - type: "null"
         finalBudgetBalance:
+          description: Balance de la última versión si está publicada; en otro caso, balance actual del ledger. No acredita aceptación central.
           $ref: "#/components/schemas/DecimalString"
         finalEnergyBalance:
           $ref: "#/components/schemas/DecimalString"

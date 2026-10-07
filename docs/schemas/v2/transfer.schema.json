@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "EnergyShark Protocol v2 - Transfer",
-
   "allOf": [
     {
       "oneOf": [
@@ -23,11 +22,9 @@
         "type": {
           "const": "transfer"
         },
-
         "cycleId": {
           "$ref": "common.schema.json#/$defs/cycleId"
         },
-
         "data": {
           "type": "object",
           "required": [
@@ -37,9 +34,11 @@
             "quantity": {
               "type": "number"
             },
-
             "becauseOf": {
               "$ref": "common.schema.json#/$defs/uuid"
+            },
+            "penalty": {
+              "description": "Metadato opaco opcional: forma pendiente de confirmaci\u00f3n. quantity ya incluye el descuento; no volver a deducirlo."
             }
           },
           "additionalProperties": false

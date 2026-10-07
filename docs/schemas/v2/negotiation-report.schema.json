@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "EnergyShark Protocol v2 - Negotiation Report",
-
   "allOf": [
     {
       "$ref": "common.schema.json#/$defs/cityEnvelope"
@@ -16,11 +15,9 @@
         "type": {
           "const": "negotiation-report"
         },
-
         "cycleId": {
           "$ref": "common.schema.json#/$defs/cycleId"
         },
-
         "data": {
           "type": "object",
           "required": [
@@ -31,7 +28,6 @@
             "budgetBalance": {
               "type": "number"
             },
-
             "energyBalance": {
               "type": "number"
             }
@@ -40,5 +36,6 @@
         }
       }
     }
-  ]
+  ],
+  "description": "E1 v2: cycleId obligatorio; solo durante el periodo de cierre de un ciclo abierto para la ciudad. Retry conserva idpk; una correcci\u00f3n usa nuevos msgId/idpk y reemplaza el reporte anterior mientras la ventana est\u00e9 abierta."
 }

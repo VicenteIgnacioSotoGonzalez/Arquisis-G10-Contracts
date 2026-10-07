@@ -1,17 +1,31 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "EnergyShark Protocol v2 - Distance Table",
-
   "allOf": [
     {
-      "oneOf": [
-        {
-          "$ref": "common.schema.json#/$defs/cityEnvelope"
+      "$comment": "Formato productivo informado: sender central, cityId null y cycleId opcional. La excepción es local porque common.centralEnvelope prohíbe incluso cityId null.",
+      "type": "object",
+      "required": [
+        "idpk",
+        "msgId",
+        "type",
+        "timestamp",
+        "sender"
+      ],
+      "properties": {
+        "idpk": {
+          "$ref": "common.schema.json#/$defs/uuid"
         },
-        {
-          "$ref": "common.schema.json#/$defs/centralEnvelope"
+        "msgId": {
+          "$ref": "common.schema.json#/$defs/uuid"
+        },
+        "timestamp": {
+          "$ref": "common.schema.json#/$defs/timestamp"
+        },
+        "cycleId": {
+          "$ref": "common.schema.json#/$defs/cycleId"
         }
-      ]
+      }
     },
     {
       "type": "object",
@@ -22,15 +36,12 @@
         "type": {
           "const": "distance-table"
         },
-
         "cityId": {
-          "$ref": "common.schema.json#/$defs/cityCode"
+          "type": "null"
         },
-
         "sender": {
           "const": "central"
         },
-
         "data": {
           "type": "object",
           "required": [
@@ -50,11 +61,9 @@
                   "distance": {
                     "type": "number"
                   },
-
                   "transportCost": {
                     "type": "number"
                   },
-
                   "enabled": {
                     "type": "boolean"
                   }

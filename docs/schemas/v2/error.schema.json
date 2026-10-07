@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "EnergyShark Protocol v2 - Error",
-
   "allOf": [
     {
       "$ref": "common.schema.json#/$defs/centralEnvelope"
@@ -14,58 +13,50 @@
         "code",
         "data"
       ],
-
       "properties": {
         "type": {
           "const": "error"
         },
-
         "cycleId": {
           "$ref": "common.schema.json#/$defs/cycleId"
         },
-
         "reason": {
           "type": "string"
         },
-
         "code": {
           "type": "integer"
         },
-
         "data": {
           "type": "object",
           "required": [
             "target",
             "message"
           ],
-
           "properties": {
             "target": {
               "$ref": "common.schema.json#/$defs/uuid"
             },
-
             "message": {
               "type": "string",
               "minLength": 1
             },
-
             "cycleId": {
               "$ref": "common.schema.json#/$defs/cycleId"
             },
-
             "cap": {
               "type": "number"
             },
-
             "spare": {
               "type": "number"
+            },
+            "opensAt": {
+              "type": "string",
+              "format": "date-time"
             }
           },
-
           "additionalProperties": false
         }
       },
-
       "oneOf": [
         {
           "properties": {
@@ -113,6 +104,25 @@
             "data": {
               "required": [
                 "spare"
+              ]
+            }
+          }
+        },
+        {
+          "description": "E1 v2: tabla 425, narrativa 422; ambos representan la misma raz\u00f3n.",
+          "properties": {
+            "reason": {
+              "const": "REPORT_TOO_EARLY"
+            },
+            "code": {
+              "enum": [
+                422,
+                425
+              ]
+            },
+            "data": {
+              "required": [
+                "opensAt"
               ]
             }
           }

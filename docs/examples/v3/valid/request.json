@@ -1,0 +1,10 @@
+{
+  "idpk": "7e4b50d4-ff03-4fde-8955-6df305d4fb55",
+  "msgId": "c9dfa25f-0806-4ad8-bfaa-55444ee67870",
+  "type": "request",
+  "timestamp": "2026-09-09T03:20:00Z",
+  "cityId": "COR",
+  "data": {
+    "ask": "status-statement"
+  }
+}

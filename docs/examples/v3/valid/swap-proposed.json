@@ -1,0 +1,33 @@
+{
+  "idpk": "0a5615bf-f089-5f06-95e8-fc8696456381",
+  "msgId": "08db6f79-2180-58a2-ada1-4ef36b1c015d",
+  "type": "swap-proposed",
+  "timestamp": "2026-10-26T14:00:00Z",
+  "sender": "central",
+  "data": {
+    "swapId": "swp-77",
+    "idpk": "8164f27d-ee8a-5ada-be36-19e48d7f123c",
+    "proposer": "KLD",
+    "give": {
+      "asset": "KWH",
+      "amount": 7300
+    },
+    "take": {
+      "asset": "CR",
+      "amount": 2409000.0
+    },
+    "memo": "KLD-9431",
+    "expiresAt": "2026-10-26T14:15:00Z",
+    "token": "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJzd3AtNzcifQ.signature",
+    "balancesAfter": {
+      "CR": {
+        "available": 1791000.0,
+        "held": 0.0
+      },
+      "KWH": {
+        "available": 7300,
+        "held": 0
+      }
+    }
+  }
+}

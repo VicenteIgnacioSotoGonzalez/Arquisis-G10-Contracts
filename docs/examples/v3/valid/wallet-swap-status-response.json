@@ -1,0 +1,33 @@
+{
+  "swapId": "swp-77",
+  "status": "settled",
+  "lastEvent": {
+    "type": "swap-settled",
+    "data": {
+      "swapId": "swp-77",
+      "idpk": "8164f27d-ee8a-5ada-be36-19e48d7f123c",
+      "proposer": "KLD",
+      "acceptor": "COR",
+      "give": {
+        "asset": "KWH",
+        "amount": 7300
+      },
+      "take": {
+        "asset": "CR",
+        "amount": 2409000.0
+      },
+      "memo": "KLD-9431",
+      "settledAt": "2026-10-26T14:06:14.118Z",
+      "balancesAfter": {
+        "CR": {
+          "available": 1791000.0,
+          "held": 0.0
+        },
+        "KWH": {
+          "available": 7300,
+          "held": 0
+        }
+      }
+    }
+  }
+}

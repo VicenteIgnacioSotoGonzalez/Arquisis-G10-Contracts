@@ -1,0 +1,12 @@
+{
+  "idpk": "41ef8f18-c10b-41e3-a18c-a6077304a291",
+  "msgId": "ad0de3b5-88c7-4ef4-89cc-a432a704c819",
+  "type": "negotiation-report",
+  "timestamp": "2026-09-09T03:35:00Z",
+  "cityId": "COR",
+  "cycleId": "cycle-9431",
+  "data": {
+    "budgetBalance": 131212,
+    "energyBalance": 1232
+  }
+}

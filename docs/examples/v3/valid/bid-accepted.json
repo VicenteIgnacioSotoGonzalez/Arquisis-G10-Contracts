@@ -1,0 +1,18 @@
+{
+  "idpk": "8bef269f-1c7b-506d-8a8c-5548a42b7dcd",
+  "msgId": "d591d909-1c3b-5d7a-8828-5af114ab6e2c",
+  "type": "bid-accepted",
+  "timestamp": "2026-10-26T14:00:00Z",
+  "cityId": "KLD",
+  "cycleId": "cycle-9431",
+  "data": {
+    "target": "925905a3-82b1-5e39-8f38-d74ab6bff6a9",
+    "offerId": "KLD-9431",
+    "quantity": 7300,
+    "pricePerEnergy": 330,
+    "amount": 2409000.0,
+    "swapId": "swp-77",
+    "swapToken": "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJzd3AtNzcifQ.signature",
+    "expiresAt": "2026-10-26T14:15:00Z"
+  }
+}

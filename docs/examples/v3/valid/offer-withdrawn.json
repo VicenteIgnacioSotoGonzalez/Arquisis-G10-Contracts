@@ -1,0 +1,11 @@
+{
+  "idpk": "f16dde9c-efd8-51c5-bcb4-17c1e1bf0cae",
+  "msgId": "55f39f45-1168-5ff3-8172-4cdeb8d3cc37",
+  "type": "offer-withdrawn",
+  "timestamp": "2026-10-26T14:00:00Z",
+  "cityId": "KLD",
+  "cycleId": "cycle-9431",
+  "data": {
+    "offerId": "KLD-9431"
+  }
+}

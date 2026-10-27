@@ -1,0 +1,17 @@
+{
+  "idpk": "320705b6-2b11-5665-8329-b29a5234ee88",
+  "msgId": "666804b3-79f5-5ce9-911d-66cd945fc642",
+  "type": "bid-accepted",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "cycleId": "cycle-251000",
+  "cityId": "KLD",
+  "data": {
+    "target": "32f90cf8-da38-5fe2-94d2-fd849997aeed",
+    "offerId": "offer-KLD-251000",
+    "quantity": 10,
+    "pricePerEnergy": 52.5,
+    "amount": 525,
+    "swapId": "swap-251000-1",
+    "expiresAt": "2026-10-26T15:01:00Z"
+  }
+}

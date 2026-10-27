@@ -1,0 +1,16 @@
+{
+  "idpk": "d2d52aef-4c6c-5219-a1ac-e691b32601b7",
+  "msgId": "b5cc76bd-208d-5f29-bc0b-ff5872980672",
+  "type": "bid-rejected",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "cycleId": "cycle-251000",
+  "cityId": "KLD",
+  "data": {
+    "target": "32f90cf8-da38-5fe2-94d2-fd849997aeed",
+    "offerId": "offer-KLD-251000",
+    "requested": 10,
+    "message": "Insufficient available quantity"
+  },
+  "reason": "QUANTITY_UNAVAILABLE",
+  "code": 409
+}

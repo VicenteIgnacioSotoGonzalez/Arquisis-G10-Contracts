@@ -1,0 +1,16 @@
+{
+  "cityId": "KLD",
+  "assets": {
+    "cr": {
+      "available": 1,
+      "held": 0
+    },
+    "kwh": {
+      "available": 2,
+      "held": 0
+    }
+  },
+  "asOf": "2026-10-26T14:00:00Z",
+  "lastSettledCycle": null,
+  "balanceAtLastClose": null
+}

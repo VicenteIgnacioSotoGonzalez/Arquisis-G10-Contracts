@@ -1,0 +1,21 @@
+{
+  "idpk": "dbd5facb-ebab-5583-97d9-109f29c4d813",
+  "msgId": "27f4cd13-0586-5cfc-9612-4809635267dd",
+  "type": "swap-cancelled",
+  "timestamp": "2026-10-26T14:00:00Z",
+  "sender": "central",
+  "data": {
+    "swapId": "swp-77",
+    "idpk": "8164f27d-ee8a-5ada-be36-19e48d7f123c",
+    "balancesAfter": {
+      "CR": {
+        "available": 1791000.0,
+        "held": 0.0
+      },
+      "KWH": {
+        "available": 7300,
+        "held": 0
+      }
+    }
+  }
+}

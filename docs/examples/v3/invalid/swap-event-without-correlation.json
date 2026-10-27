@@ -1,0 +1,20 @@
+{
+  "idpk": "1a39f6fe-6484-5f55-a337-4e0e0d36edb3",
+  "msgId": "0863c192-7ad5-52e4-a573-c71f8e0bb943",
+  "type": "swap-settled",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "sender": "central",
+  "data": {
+    "balancesAfter": {
+      "cr": {
+        "available": 1000,
+        "held": 0
+      },
+      "kwh": {
+        "available": 190,
+        "held": 0
+      },
+      "creditLine": 2000
+    }
+  }
+}

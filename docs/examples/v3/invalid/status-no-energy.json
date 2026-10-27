@@ -1,0 +1,18 @@
+{
+  "idpk": "623f08a5-0cc3-57c5-8b2a-6e603656c3db",
+  "msgId": "faa13000-f039-5d9d-96a1-1797b6d904d2",
+  "type": "status-statement",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "cycleId": "cycle-251000",
+  "sender": "central",
+  "data": {
+    "validUntil": "2026-10-26T15:20:00Z",
+    "market": {
+      "opensAt": "2026-10-26T15:05:00Z",
+      "lastOfferAt": "2026-10-26T15:12:00Z",
+      "lastBidAt": "2026-10-26T15:14:00Z",
+      "closesAt": "2026-10-26T15:15:00Z",
+      "reportOpensAt": "2026-10-26T15:15:00Z"
+    }
+  }
+}

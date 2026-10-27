@@ -1,0 +1,10 @@
+{
+  "idpk": "6ffcb412-cb2a-5cf1-9066-7a9afb23d934",
+  "msgId": "b75d945f-5463-5d28-8200-7527c93a95b0",
+  "type": "market-closed",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "cycleId": "cycle-251000",
+  "sender": "central",
+  "data": {},
+  "cityId": "KLD"
+}

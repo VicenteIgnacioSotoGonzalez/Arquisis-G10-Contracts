@@ -1,0 +1,14 @@
+{
+  "idpk": "ca06e5fa-e17b-5535-8885-09b79abc9ede",
+  "msgId": "8e42a5ee-5c05-5024-a039-c62d87f78713",
+  "type": "transfer",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "cycleId": "cycle-251000",
+  "sender": "central",
+  "data": {
+    "quantity": 400000,
+    "balanceAfter": 1400000,
+    "creditLine": 200000
+  },
+  "cityId": "KLD"
+}

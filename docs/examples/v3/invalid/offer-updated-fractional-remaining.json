@@ -1,0 +1,13 @@
+{
+  "idpk": "c70ff632-b4f3-506d-8e01-61d05af23d79",
+  "msgId": "7420324b-7d2e-54c3-ad10-f8669da6bdd3",
+  "type": "offer-updated",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "cycleId": "cycle-251000",
+  "cityId": "KLD",
+  "data": {
+    "offerId": "offer-KLD-251000",
+    "remaining": 12.5,
+    "pricePerEnergy": 53.5
+  }
+}

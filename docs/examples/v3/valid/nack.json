@@ -1,0 +1,14 @@
+{
+  "idpk": "0e532d82-b83d-467b-a737-7319587e7db5",
+  "msgId": "de38c5f0-6255-47a2-a8d9-e984e5043bbc",
+  "type": "nack",
+  "timestamp": "2026-09-09T03:22:00Z",
+  "sender": "central",
+  "reason": "MALFORMED_MESSAGE",
+  "code": 422,
+  "data": {
+    "target": "665f51af-52df-46de-9958-a217d7aa188a",
+    "message": "quantity must be a positive number",
+    "cycleId": "cycle-9431"
+  }
+}

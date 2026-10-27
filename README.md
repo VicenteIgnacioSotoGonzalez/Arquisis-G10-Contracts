@@ -730,3 +730,7 @@ Validación de schemas, ejemplos válidos y rechazos esperados:
 pip install 'jsonschema[format]'
 python -m unittest discover -s tests -v
 ```
+
+## Contratos v3 — E2-024 (schemas oficiales, v3.0.1)
+
+Los schemas del protocolo v3 y el OpenAPI externo de la wallet son copias exactas del tag oficial `iic2173/energyshark-contracts#v3.0.1`, con procedencia SHA-256 y fixtures propios compatibles. Consulte [`docs/schemas/v3/README.md`](docs/schemas/v3/README.md). La E1 v2 queda sin modificaciones. E2-025 agregara los tests en CI de mensajes que realmente emite el nodo.

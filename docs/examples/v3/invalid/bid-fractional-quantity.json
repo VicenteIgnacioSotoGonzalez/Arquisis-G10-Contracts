@@ -1,0 +1,12 @@
+{
+  "idpk": "2dea535a-78a1-5e5b-837f-7ca52ac730c6",
+  "msgId": "32f90cf8-da38-5fe2-94d2-fd849997aeed",
+  "type": "bid",
+  "timestamp": "2026-10-26T15:00:00Z",
+  "cycleId": "cycle-251000",
+  "cityId": "HGW",
+  "data": {
+    "offerId": "offer-KLD-251000",
+    "quantity": 3.5
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "idpk": "91fe0342-e1d6-5a8d-861f-b38c61889125",
+  "msgId": "bb0abd4e-8ad9-560a-b141-3d6734b0c2ae",
+  "type": "bid-rejected",
+  "timestamp": "2026-10-26T14:00:00Z",
+  "cityId": "KLD",
+  "cycleId": "cycle-9431",
+  "data": {
+    "target": "925905a3-82b1-5e39-8f38-d74ab6bff6a9",
+    "offerId": "KLD-9431",
+    "requested": 7300,
+    "available": 4200
+  },
+  "reason": "QUANTITY_UNAVAILABLE",
+  "code": 409
+}

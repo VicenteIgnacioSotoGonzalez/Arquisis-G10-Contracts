@@ -734,3 +734,31 @@ python -m unittest discover -s tests -v
 ## Contratos v3 — E2-024 (schemas oficiales, v3.0.1)
 
 Los schemas del protocolo v3 y el OpenAPI externo de la wallet son copias exactas del tag oficial `iic2173/energyshark-contracts#v3.0.1`, con procedencia SHA-256 y fixtures propios compatibles. Consulte [`docs/schemas/v3/README.md`](docs/schemas/v3/README.md). La E1 v2 queda sin modificaciones. E2-025 agregara los tests en CI de mensajes que realmente emite el nodo.
+
+## Pruebas de contratos v3 (E2-025)
+
+La suite valida los **46 schemas oficiales v3.0.1** almacenados en
+`docs/schemas/v3/schemas/`, sus hashes SHA-256 frente al manifiesto local,
+los **31 ejemplos válidos** y **18 inválidos** de `docs/examples/v3/`.
+El registro de `$id` / `$ref` se resuelve localmente, sin consultar la red.
+
+Para ejecutar las pruebas de E1 y E2:
+
+```bash
+python3 -m pip install -r requirements-test.txt
+python3 -m unittest discover -s tests -v
+python3 scripts/check_v3_examples.py
+```
+
+El workflow `.github/workflows/contract-tests.yml` ejecuta los mismos
+comandos en cada push y Pull Request. Los tests v2 se mantienen intactos.
+
+**Alcance:** se comprueba la estructura JSON del protocolo oficial. No se
+comprueban con JSON Schema la identidad AMQP `user_id`, los deadlines del
+mercado, el `minBid`, la serialización de bids (AD4), la firma ES256, la
+finalización de swaps por eventos/conciliación wallet (AD5), ni la vigencia de
+la estrategia por ciclo (AD6). Esas reglas pertenecen al backend y requieren
+pruebas unitarias/de integración específicas. La validación de los mensajes
+**reales emitidos por el nodo** y su incorporación a CI entre repositorios
+se completará en la integración posterior (E2-076); estos son fixtures
+sintéticos, no capturas de mensajes productivos.

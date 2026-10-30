@@ -1,5 +1,11 @@
 # Arquisis-G10-Contracts
 
+## Contratos E2 v3.0.2
+
+Los contratos vigentes de E2 están en [`docs/schemas/v3/`](docs/schemas/v3/PROVENANCE.md), copiados del tag oficial v3.0.2 (commit `62f6cf40768b6e42717d126e528dcd944e5bc0e3`). Los 261 ejemplos oficiales válidos e inválidos están en `docs/examples/v3/`. La API propia E2 está en [`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml), generada desde FastAPI; el OpenAPI de Wallet oficial está en `docs/openapi/wallet-v3-official.yaml`. Los contratos E1/v2 y su OpenAPI `openapi-v2.yaml` permanecen como referencia histórica.
+
+Ejecutar `python -m pip install -r requirements-test.txt` y `python -m unittest discover -s tests -v` valida ambos protocolos. El CI también descarga el backend público, prueba los ACK/NACK que construye el Connector y ejecuta ensayos seller/buyer con PostgreSQL temporal contra los schemas oficiales vendorizados allí. El contexto compartido está en [`agents.md`](agents.md).
+
 Este repo tiene los contratos utilizados por los componentes del sistema para tener una definición común de los mensajes del protocolo y, posteriormente, de la API HTTP del backend.
 
 Este repo responde al requisito **RDOC04** de la E1, que pide un repositorio de contratos a nivel de organización que contenga los schemas de los mensajes de la mecánica y la especificación OpenAPI de la API propia.

@@ -1,5 +1,7 @@
 # AGENTS.md — Contexto compartido EnergyShark G10
 
+**Contratos E2 vigentes:** `docs/schemas/v3/` y `docs/openapi/openapi.yaml`, basados en el tag oficial v3.0.2. Los contratos E1/v2 se conservan en sus rutas versionadas; para nuevas funciones E2 se prioriza v3.0.2.
+
 ## 1. Propósito
 
 Este archivo contiene el contexto común del proyecto **EnergyShark - Grupo 10** y debe ser utilizado como referencia por cualquier persona o agente de IA que trabaje en los repositorios de backend, frontend o contratos.

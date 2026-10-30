@@ -1,6 +1,6 @@
 # AGENTS.md — Contexto compartido EnergyShark G10
 
-**Contratos E2 vigentes:** `docs/schemas/v3/` y `docs/openapi/openapi.yaml`, basados en el tag oficial v3.0.2. Los contratos E1/v2 se conservan en sus rutas versionadas; para nuevas funciones E2 se prioriza v3.0.2.
+**Contratos E2 vigentes en Arquisis-G10-Contracts:** `docs/schemas/v3/` y `docs/openapi/openapi.yaml`, basados en el tag oficial v3.0.2. Los contratos E1/v2 se conservan en sus rutas versionadas; para nuevas funciones E2 se prioriza v3.0.2.
 
 ## 1. Propósito
 

@@ -8,6 +8,7 @@ paths:
       tags:
       - cycles
       summary: List Cycles
+      description: RF01. Resumen de ciclos; consultar /cycles/{cycle_id}/history para ofertas, bids, swaps y liquidaciones de un ciclo.
       operationId: list_cycles_cycles_get
       responses:
         '200':
@@ -47,8 +48,11 @@ paths:
       tags:
       - cycles
       summary: Cycle History
-      description: 'RF01/E2-056: estado e historial E2, sin efectos ni secretos de
-        wallet.'
+      description: >-
+        RF01/E2-056. Historial persistido de status-statement, financiamiento,
+        ofertas y revisiones, bids, swaps, trade-recorded, imbalance-settlement,
+        reportes y ledger. proposalHttpAcceptedAt registra la recepción HTTP 202
+        de Wallet; no implica swap-settled. No expone swapToken ni credenciales.
       operationId: cycle_history_cycles__cycle_id__history_get
       parameters:
       - name: cycle_id
@@ -370,6 +374,11 @@ paths:
       tags:
       - audit
       summary: List Audit Anomalies
+      description: >-
+        RF05. Filtra recepciones DUPLICATE, DISCARDED y NACKED por msgId, idpk,
+        reasonCode, emisor, tipo o ciclo. IDENTITY_MISMATCH es un reasonCode,
+        no un estado adicional. relatedMsgId vincula un duplicado con el mensaje
+        que aplicó originalmente la operación cuando existe esa correlación.
       operationId: list_audit_anomalies_audit_anomalies_get
       parameters:
       - name: status
@@ -547,6 +556,7 @@ paths:
       tags:
       - distance-table
       summary: Get Current Distance Table
+      description: RF02. Última tabla recibida; el libro de mercado calcula el transporte con la tabla más reciente del ciclo consultado.
       operationId: get_current_distance_table_distance_table_get
       responses:
         '200':
@@ -573,10 +583,13 @@ paths:
       tags:
       - market
       summary: Read Market Book
-      description: 'Por defecto, solo ofertas con remaining positivo y mercado abierto.
-
-
-        includeInactive permite ver retiradas, cerradas e inciertas para auditoría.'
+      description: >-
+        RF02. Por defecto muestra ofertas con remaining positivo mientras el
+        mercado esté abierto. includeInactive permite inspeccionar retiradas,
+        cerradas e inciertas. freshness, feedGapAt, stale y uncertain expresan
+        incertidumbre del feed, no garantizan que exista una oferta disponible.
+        routeEnabled=false usa la tarifa punitiva de ruta deshabilitada; el
+        precio efectivo se calcula con la última distance-table de ese ciclo.
       operationId: read_market_book_market_book_get
       parameters:
       - name: cycleId
@@ -612,7 +625,10 @@ paths:
       tags:
       - market
       summary: Read Buy Candidates
-      description: Solo lectura. Nunca encola bids ni opera fuera de la ventana oficial.
+      description: >-
+        RF02/RF04. Candidatas elegibles según estrategia y ventana oficial.
+        Excluye snapshots marcados como stale o inciertos. Es solo lectura:
+        consultar esta ruta no envía bids ni reserva energía.
       operationId: read_buy_candidates_market_buy_candidates_get
       parameters:
       - name: cycleId
@@ -757,8 +773,11 @@ paths:
       tags:
       - market-admin
       summary: Update Strategy
-      description: Crea una versión pendiente. El ciclo activo mantiene su versión
-        fija.
+      description: >-
+        RF04/AD6. Crea una versión pendiente de precio, cantidad, span y políticas
+        sin reiniciar el nodo. El ciclo activo conserva la versión fijada al
+        abrirse; la edición rige en el siguiente ciclo. expectedVersion evita
+        sobrescribir otra edición y puede producir HTTP 409.
       operationId: update_strategy_market_strategy_post
       security:
       - OAuth2PasswordBearer: []
@@ -911,6 +930,10 @@ paths:
       tags:
       - market-admin
       summary: Read Swaps
+      description: >-
+        RF01/RF04. Estado persistido de swaps. proposalHttpAcceptedAt indica
+        aceptación HTTP 202 de la solicitud por Wallet, no liquidación.
+        SETTLED con settledAt representa el evento swap-settled aplicado.
       operationId: read_swaps_market_swaps_get
       parameters:
       - name: cycleId
@@ -1003,6 +1026,10 @@ paths:
       tags:
       - market-rf06
       summary: Compare Cycle Metrics
+      description: >-
+        RF06. Métricas por ciclo para comparar span aplicado, cobertura,
+        bids rechazados, baseline y costo real. Los ciclos pendientes pueden
+        carecer de costo final; no deben agregarse como resultados finales.
       operationId: compare_cycle_metrics_market_cycle_metrics_compare_get
       parameters:
       - name: offset

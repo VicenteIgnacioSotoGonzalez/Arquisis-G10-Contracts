@@ -9,7 +9,7 @@ import unittest
 from uuid import uuid4
 from datetime import datetime, timezone
 
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker, FormatError
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 import yaml
@@ -80,6 +80,10 @@ def _mutated(base, mutation):
 
 
 class V3ContractsTests(unittest.TestCase):
+    def test_date_time_format_validation_is_installed(self):
+        with self.assertRaises(FormatError):
+            FormatChecker().check("2026-10-20T14:05:00", "date-time")
+
     def test_pinned_official_schemas_have_exact_hashes(self):
         expected = json.loads((SCHEMAS / "SOURCE_SHA256.json").read_text())
         actual = {path.relative_to(SCHEMAS).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()

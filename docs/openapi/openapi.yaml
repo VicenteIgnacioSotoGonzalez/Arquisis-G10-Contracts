@@ -3742,6 +3742,7 @@ components:
           anyOf:
           - type: string
           - type: integer
+          - type: 'null'
           title: After
       type: object
       required:
@@ -3789,6 +3790,17 @@ components:
           type: string
           pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
           title: Offerquantityfraction
+        offerPriceOverride:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Offerpriceoverride
+        offerQuantityCap:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Offerquantitycap
         bidAcceptancePolicy:
           type: string
           title: Bidacceptancepolicy
@@ -3818,6 +3830,8 @@ components:
       - status
       - offerPriceMarkup
       - offerQuantityFraction
+      - offerPriceOverride
+      - offerQuantityCap
       - bidAcceptancePolicy
       - offerSelectionPolicy
       - spanSeconds
@@ -3842,6 +3856,20 @@ components:
           - type: string
             pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,6}|(?=[\d.]{1,11}0*$)\d{0,6}\.\d{0,4}0*$)
           title: Offerquantityfraction
+        offerPriceOverride:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,16}|(?=[\d.]{1,21}0*$)\d{0,16}\.\d{0,4}0*$)
+          - type: 'null'
+          title: Offerpriceoverride
+        offerQuantityCap:
+          anyOf:
+          - type: integer
+            minimum: 0.0
+          - type: 'null'
+          title: Offerquantitycap
         bidAcceptancePolicy:
           type: string
           title: Bidacceptancepolicy

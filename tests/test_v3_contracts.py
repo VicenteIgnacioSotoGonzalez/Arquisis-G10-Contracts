@@ -125,6 +125,9 @@ class V3ContractsTests(unittest.TestCase):
         for route in ("/market/strategy", "/market/book", "/market/cycle-metrics/compare",
                       "/audit/intercity", "/audit/wallet-events", "/audit/reconciliations"):
             self.assertIn(route, api["paths"])
+        strategy_fields = api["components"]["schemas"]["StrategyUpdateIn"]["properties"]
+        self.assertIn("offerPriceOverride", strategy_fields)
+        self.assertIn("offerQuantityCap", strategy_fields)
 
     def test_backend_ack_and_nack_emitters_validate_against_course_schemas(self):
         backend = Path(os.environ.get("ENERGYSHARK_BACKEND_ROOT", ROOT.parent / "E0-Arquisis-local"))

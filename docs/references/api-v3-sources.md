@@ -1,5 +1,7 @@
 # E2-009 — Fuentes oficiales de contratos API v3
 
+**Actualización E2-076:** los archivos operativos de `docs/schemas/v3/`, `docs/examples/v3/` y `docs/openapi/wallet-v3-official.yaml` provienen del tag oficial **v3.0.2**, commit `62f6cf40768b6e42717d126e528dcd944e5bc0e3`. La corrección C23 aclara que los mensajes dirigidos por la Central a `city.{CODE}`, incluidos eventos Wallet, llegan con AMQP `user_id="central"`; `market-closed` conserva `user_id` ausente en la cola de mercado. Los enlaces al commit v3.0.1 de este inventario describen la investigación original E2-009 y no sustituyen el snapshot v3.0.2.
+
 **Alcance (RDOC04).** Inventario y comparación documental para preparar la migración de los contratos propios. Este documento describe el checkout local, no acredita una integración v3 ni el comportamiento de servicios desplegados. No cambia schemas, pruebas ni código.
 
 ## Inventario oficial v3

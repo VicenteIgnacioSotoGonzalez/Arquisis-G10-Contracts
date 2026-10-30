@@ -1,935 +1,4069 @@
 openapi: 3.1.0
-
 info:
-  title: EnergyShark E1 API
-  version: 2.0.0
-  description: |
-    Contrato público de la API HTTP de EnergyShark para la Entrega 1.
-
-    Esta especificación documenta las operaciones destinadas al frontend
-    para consultar ciclos, conectividad, negociaciones y anomalías, además
-    de crear propuestas de negociación.
-
-    Las rutas internas usadas por connector y workers no están consideradas en
-    este contrato.
-
-tags:
-  - name: cycles
-    description: Consulta del historial y detalle de ciclos.
-
-  - name: connectivity
-    description: Consulta de la tabla de conectividad vigente.
-
-  - name: negotiations
-    description: Creación, seguimiento e historial de negociaciones.
-
-  - name: audit
-    description: Consulta de anomalías y evidencia de auditoría.
-
+  title: EnergyShark E2 API
+  version: 3.0.2
 paths:
   /cycles:
     get:
       tags:
-        - cycles
-      summary: Listar ciclos
-      description: |
-        Retorna el historial de ciclos conocidos por el sistema,
-        ordenados desde el más reciente al más antiguo.
-      operationId: listCycles
+      - cycles
+      summary: List Cycles
+      operationId: list_cycles_cycles_get
       responses:
-        "200":
-          description: Historial de ciclos.
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CyclesOut"
-              example:
-                total: 1
-                items:
-                  - cycleId: cycle-9431
-                    budgetBalance: "-50.00"
-                    energyBalance: "30.00"
-                    lastOperationType: DEMAND_STATEMENT
-                    lastOperationAt: "2026-09-09T03:05:00Z"
-                    reported: false
-
+                $ref: '#/components/schemas/CyclesOut'
   /cycles/{cycle_id}:
     get:
       tags:
-        - cycles
-      summary: Obtener detalle de un ciclo
-      description: |
-        Retorna el estado persistido y reconstruido de un ciclo,
-        incluyendo ledger, negociaciones, balances y
-        negotiation-report cuando exista.
-      operationId: getCycleDetail
+      - cycles
+      summary: Cycle Detail
+      operationId: cycle_detail_cycles__cycle_id__get
       parameters:
-        - name: cycle_id
-          in: path
-          required: true
-          description: Identificador del ciclo.
-          schema:
-            type: string
+      - name: cycle_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cycle Id
       responses:
-        "200":
-          description: Detalle del ciclo.
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CycleDetailOut"
-        "404":
-          description: El ciclo solicitado no existe.
+                $ref: '#/components/schemas/CycleDetailOut'
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Cycle not found
-
-  /connectivity:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /cycles/{cycle_id}/history:
     get:
       tags:
-        - connectivity
-      summary: Consultar conectividad vigente
-      description: |
-        Retorna la última distance-table persistida en una
-        representación preparada para consumo desde frontend.
-
-        El timestamp corresponde al mensaje distance-table fuente.
-      operationId: getConnectivity
+      - cycles
+      summary: Cycle History
+      description: 'RF01/E2-056: estado e historial E2, sin efectos ni secretos de
+        wallet.'
+      operationId: cycle_history_cycles__cycle_id__history_get
+      parameters:
+      - name: cycle_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Cycle Id
       responses:
-        "200":
-          description: Tabla de conectividad vigente.
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ConnectivityOut"
-              example:
-                timestamp: "2026-09-09T03:25:00Z"
-                total: 2
-                items:
-                  - destination: HGW
-                    distance: 62763183
-                    transportCost: 0.0034
-                    enabled: true
-                  - destination: TAR
-                    distance: 94306517
-                    transportCost: 0.0013
-                    enabled: true
-        "404":
-          description: No existe una distance-table persistida.
+                $ref: '#/components/schemas/CycleHistoryOut'
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Distance table not found
-  /negotiations:
-    get:
-      tags:
-        - negotiations
-      summary: Listar negociaciones
-      description: |
-        Retorna todas las negociaciones persistidas, ordenadas desde
-        la más reciente a la más antigua.
-      operationId: listNegotiations
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Lista de negociaciones.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NegotiationsOut"
-        "401":
-          description: Token ausente, inválido o expirado.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPError"
-              examples:
-                missingToken:
-                  value:
-                    detail: Not authenticated
-                invalidToken:
-                  value:
-                    detail: Invalid token
-                expiredToken:
-                  value:
-                    detail: Token has expired
-        "503":
-          description: Servicio de autenticación no disponible o mal configurado.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPError"
-              examples:
-                notConfigured:
-                  value:
-                    detail: Authentication is not configured
-                jwksUnavailable:
-                  value:
-                    detail: Unable to fetch JWKS
-
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/messages:
     post:
       tags:
-        - negotiations
-      summary: Crear una propuesta de negociación
-      description: |
-        Crea una propuesta de negociación asociada a un ciclo.
+      - internal
+      summary: Ingest Protocol Message
+      description: 'Procesa mensajes E1 ya validados por el connector.
 
-        La creación es idempotente mediante idpk. Una nueva propuesta
-        responde 201. Si el mismo idpk ya existe, se retorna la negociación
-        persistida con 200 sin crear una segunda publicación.
 
-        Un 201 indica que la intención de publicación fue persistida; no
-        implica que la central ya haya aceptado la propuesta ni que el
-        mensaje haya sido publicado en RabbitMQ.
-      operationId: createNegotiation
-      security:
-        - BearerAuth: []
+        La recepción se persiste primero como evidencia durable.
+
+        La lógica de negocio y el resultado de auditoría se confirman
+
+        posteriormente dentro de una misma transacción.'
+      operationId: ingest_protocol_message_internal_messages_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtocolMessageIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/audit/outbound:
+    post:
+      tags:
+      - internal-audit
+      summary: Create Outbound Audit
+      description: Registra durablemente la intención de publicar un mensaje.
+      operationId: create_outbound_audit_internal_audit_outbound_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OutboundMessageAuditIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/audit/outbound/dispatch:
+    get:
+      tags:
+      - internal-audit
+      summary: List Outbound Dispatch
+      description: 'Entrega al connector mensajes creados por el backend
+
+        que todavía requieren publicación en RabbitMQ.'
+      operationId: list_outbound_dispatch_internal_audit_outbound_dispatch_get
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/audit/outbound/{msg_id}/reserve-quota:
+    post:
+      tags:
+      - internal-audit
+      summary: Reserve Outbound Quota
+      description: Reserva el cupo de publicación compartido antes del envío AMQP.
+      operationId: reserve_outbound_quota_internal_audit_outbound__msg_id__reserve_quota_post
+      parameters:
+      - name: msg_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Msg Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/audit/outbound/{msg_id}/result:
+    post:
+      tags:
+      - internal-audit
+      summary: Update Outbound Audit
+      description: Registra el resultado del intento de publicación.
+      operationId: update_outbound_audit_internal_audit_outbound__msg_id__result_post
+      parameters:
+      - name: msg_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Msg Id
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/NegotiationCreate"
-            example:
-              cycleId: cycle-9431
-              idpk: 11111111-1111-4111-8111-111111111111
-              direction: give
-              requestedQuantity: "10.50"
-              offeredPrice: "3.25"
+              $ref: '#/components/schemas/OutboundMessageResultIn'
       responses:
-        "201":
-          description: Propuesta creada y pendiente de publicación.
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NegotiationOut"
-              example:
-                id: 1
-                idpk: 11111111-1111-4111-8111-111111111111
-                cycleId: cycle-9431
-                direction: give
-                requestedQuantity: "10.50"
-                offeredPrice: "3.25"
-                status: PENDING_PUBLICATION
-                confirmedEnergy: null
-                confirmedPrice: null
-                paymentQuantity: null
-                deadlineAt: null
-                createdAt: "2026-09-27T12:00:00Z"
-                updatedAt: "2026-09-27T12:00:00Z"
-        "200":
-          description: |
-            El idpk ya había sido procesado. Se retorna la negociación
-            existente sin crear otra publicación.
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/audit/inbound/market:
+    post:
+      tags:
+      - internal-audit
+      summary: Receive Market Feed
+      description: Confirma la recepción solo después de persistir inbox, claim y
+        snapshot.
+      operationId: receive_market_feed_internal_audit_inbound_market_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketFeedMessageIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NegotiationOut"
-        "401":
-          description: Token ausente, inválido o expirado.
+                $ref: '#/components/schemas/InboundMessageAuditOut'
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Not authenticated
-        "404":
-          description: El ciclo solicitado no existe.
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/audit/inbound/market-gap:
+    post:
+      tags:
+      - internal-audit
+      summary: Note Market Feed Gap
+      description: Connector registra posible pérdida antes de reanudar la cola market.
+      operationId: note_market_feed_gap_internal_audit_inbound_market_gap_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketFeedGapIn'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Cycle not found
-        "422":
-          description: |
-            Request inválido o propuesta rechazada por reglas de negocio.
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/audit/inbound:
+    post:
+      tags:
+      - internal-audit
+      summary: Create Inbound Audit
+      operationId: create_inbound_audit_internal_audit_inbound_post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InboundMessageAuditIn'
+      responses:
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/HTTPValidationError"
-                  - $ref: "#/components/schemas/HTTPError"
-              examples:
-                priceAboveCap:
-                  value:
-                    detail: PRICE_ABOVE_CAP
-                overCapacity:
-                  value:
-                    detail: OVER_CAPACITY
-                invalidDirection:
-                  value:
-                    detail:
-                      - loc:
-                          - body
-                          - direction
-                        msg: Input should be 'give' or 'take'
-                        type: literal_error
-        "503":
-          description: Servicio de autenticación no disponible o mal configurado.
+                $ref: '#/components/schemas/InboundMessageAuditOut'
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Unable to fetch JWKS
-  /negotiations/{negotiation_id}:
+                $ref: '#/components/schemas/HTTPValidationError'
     get:
       tags:
-        - negotiations
-      summary: Obtener detalle de una negociación
-      description: |
-        Retorna el estado y detalle persistido de una negociación.
-      operationId: getNegotiation
-      security:
-        - BearerAuth: []
+      - internal-audit
+      summary: List Inbound Audit
+      operationId: list_inbound_audit_internal_audit_inbound_get
       parameters:
-        - name: negotiation_id
-          in: path
-          required: true
-          description: Identificador entero de la negociación.
-          schema:
-            type: integer
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - DUPLICATE
+            - DISCARDED
+            - NACKED
+            type: string
+          - type: 'null'
+          title: Status
+      - name: type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+      - name: reasonCode
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoncode
+      - name: msgId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msgid
+      - name: idpk
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idpk
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 100
+          title: Limit
       responses:
-        "200":
-          description: Detalle de la negociación.
+        '200':
+          description: Successful Response
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NegotiationOut"
-              example:
-                id: 1
-                idpk: 11111111-1111-4111-8111-111111111111
-                cycleId: cycle-9431
-                direction: give
-                requestedQuantity: "10.50"
-                offeredPrice: "3.25"
-                status: PAID
-                confirmedEnergy: "10.50"
-                confirmedPrice: "3.25"
-                paymentQuantity: "34.13"
-                deadlineAt: null
-                createdAt: "2026-09-27T12:00:00Z"
-                updatedAt: "2026-09-27T12:01:00Z"
-        "401":
-          description: Token ausente, inválido o expirado.
+                $ref: '#/components/schemas/InboundMessageAuditListOut'
+        '422':
+          description: Validation Error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Not authenticated
-        "404":
-          description: La negociación solicitada no existe.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Negotiation not found
-        "422":
-          description: negotiation_id no cumple el tipo esperado.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-        "503":
-          description: Servicio de autenticación no disponible o mal configurado.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPError"
-              example:
-                detail: Unable to fetch JWKS
+                $ref: '#/components/schemas/HTTPValidationError'
   /audit/anomalies:
     get:
       tags:
-        - audit
-      summary: Listar anomalías de mensajes
-      description: |
-        Retorna evidencia pública de mensajes duplicados, descartados
-        o respondidos con NACK.
-
-        Los filtros se combinan mediante igualdad. El resultado siempre
-        se restringe a anomalías con estado DUPLICATE, DISCARDED o NACKED.
-
-        El campo total representa la cantidad total de coincidencias antes
-        de aplicar limit, por lo que puede ser mayor que la cantidad de
-        elementos retornados en items.
-      operationId: listAuditAnomalies
+      - audit
+      summary: List Audit Anomalies
+      operationId: list_audit_anomalies_audit_anomalies_get
       parameters:
-        - name: status
-          in: query
-          required: false
-          description: Filtra por estado de anomalía.
-          schema:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - DUPLICATE
+            - DISCARDED
+            - NACKED
             type: string
-            enum:
-              - DUPLICATE
-              - DISCARDED
-              - NACKED
-
-        - name: type
-          in: query
-          required: false
-          description: Filtra por tipo de mensaje del protocolo.
-          schema:
-            type: string
-
-        - name: reasonCode
-          in: query
-          required: false
-          description: Filtra por código de razón asociado a la anomalía.
-          schema:
-            type: string
-
-        - name: msgId
-          in: query
-          required: false
-          description: |
-            Filtra por msgId. Se mantiene como string porque una anomalía
-            puede representar un mensaje malformado.
-          schema:
-            type: string
-
-        - name: idpk
-          in: query
-          required: false
-          description: |
-            Filtra por idpk. Se mantiene como string porque una anomalía
-            puede representar un mensaje malformado.
-          schema:
-            type: string
-
-        - name: limit
-          in: query
-          required: false
-          description: Cantidad máxima de elementos retornados.
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 500
-            default: 100
-
-      responses:
-        "200":
-          description: Lista de anomalías que cumplen los filtros.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuditAnomalyListOut"
-              example:
-                total: 1
-                items:
-                  - id: 1
-                    msgId: 22222222-2222-4222-8222-222222222222
-                    idpk: 33333333-3333-4333-8333-333333333333
-                    type: status-statement
-                    cycleId: cycle-9431
-                    status: NACKED
-                    reasonCode: MALFORMED_MESSAGE
-                    reason: Falta data.energy.consumption
-                    receivedAt: "2026-09-27T12:00:00Z"
-                    processedAt: "2026-09-27T12:00:01Z"
-                    relatedMsgId: 22222222-2222-4222-8222-222222222222
-
-        "422":
-          description: Alguno de los filtros no cumple las restricciones esperadas.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: |
-        Access token JWT emitido por Auth0.
-        Debe enviarse mediante el header:
-        Authorization: Bearer <token>
-
-  schemas:
-    DecimalString:
-      type: string
-      description: Valor decimal serializado como string.
-      examples:
-        - "10.50"
-
-    DecimalInputPositive:
-      oneOf:
-        - type: number
-          exclusiveMinimum: 0
-        - type: string
-      description: |
-        Valor decimal estrictamente mayor que cero.
-        El backend acepta números JSON y strings decimales.
-
-    DecimalInputNonNegative:
-      oneOf:
-        - type: number
+          - type: 'null'
+          title: Status
+      - name: type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+      - name: reasonCode
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoncode
+      - name: msgId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msgid
+      - name: idpk
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idpk
+      - name: sender
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sender
+      - name: cycleId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
           minimum: 0
-        - type: string
-      description: |
-        Valor decimal mayor o igual que cero.
-        El backend acepta números JSON y strings decimales.
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 500
+          minimum: 1
+          default: 100
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditAnomalyListOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /negotiations:
+    get:
+      tags:
+      - negotiations
+      summary: List Negotiations
+      operationId: list_negotiations_negotiations_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationsOut'
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - negotiations
+      summary: Create Negotiation
+      description: 'Crea una negociación voluntaria y deja su
 
-    HTTPError:
-      type: object
-      required:
-        - detail
-      properties:
-        detail:
+        negotiation-proposal pendiente de publicación.
+
+
+        Requiere JWT válido. La idempotencia es por idpk:
+
+        un reintento con el mismo idpk devuelve la
+
+        negociación existente con 200.'
+      operationId: create_negotiation_negotiations_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NegotiationCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /negotiations/{negotiation_id}:
+    get:
+      tags:
+      - negotiations
+      summary: Get Negotiation
+      operationId: get_negotiation_negotiations__negotiation_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: negotiation_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Negotiation Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NegotiationOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /distance-table:
+    get:
+      tags:
+      - distance-table
+      summary: Get Current Distance Table
+      operationId: get_current_distance_table_distance_table_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistanceTableOut'
+  /connectivity:
+    get:
+      tags:
+      - connectivity
+      summary: Get Connectivity
+      operationId: get_connectivity_connectivity_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectivityOut'
+  /market/book:
+    get:
+      tags:
+      - market
+      summary: Read Market Book
+      description: 'Por defecto, solo ofertas con remaining positivo y mercado abierto.
+
+
+        includeInactive permite ver retiradas, cerradas e inciertas para auditoría.'
+      operationId: read_market_book_market_book_get
+      parameters:
+      - name: cycleId
+        in: query
+        required: true
+        schema:
           type: string
-      examples:
-        - detail: Cycle not found
+          minLength: 1
+          maxLength: 64
+          title: Cycleid
+      - name: includeInactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Includeinactive
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketBookOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/buy-candidates:
+    get:
+      tags:
+      - market
+      summary: Read Buy Candidates
+      description: Solo lectura. Nunca encola bids ni opera fuera de la ventana oficial.
+      operationId: read_buy_candidates_market_buy_candidates_get
+      parameters:
+      - name: cycleId
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+          title: Cycleid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketBuyCandidatesOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/market/bids:
+    post:
+      tags:
+      - internal-market
+      summary: Create Buy Bid
+      description: Genera bid dirigido sin price; el ACK nunca marca aceptación comercial.
+      operationId: create_buy_bid_internal_market_bids_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuyBidIn'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/offers/{offer_id}/price:
+    patch:
+      tags:
+      - seller-offers
+      summary: Reprice
+      operationId: reprice_market_offers__offer_id__price_patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: offer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Offer Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepriceIn'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/offers/{offer_id}/withdraw:
+    post:
+      tags:
+      - seller-offers
+      summary: Withdraw
+      operationId: withdraw_market_offers__offer_id__withdraw_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: offer_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Offer Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/strategy:
+    get:
+      tags:
+      - market-admin
+      summary: Read Strategy
+      description: No crea una estrategia por el simple hecho de consultar (GET sin
+        writes).
+      operationId: read_strategy_market_strategy_get
+      parameters:
+      - name: cycleId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+          title: Cycleid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyViewOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - market-admin
+      summary: Update Strategy
+      description: Crea una versión pendiente. El ciclo activo mantiene su versión
+        fija.
+      operationId: update_strategy_market_strategy_post
+      security:
+      - OAuth2PasswordBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StrategyUpdateIn'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/strategies:
+    get:
+      tags:
+      - market-admin
+      summary: Read Strategy Versions
+      description: Historial completo y ordenado de versiones de estrategia (AD6/RF06).
+      operationId: read_strategy_versions_market_strategies_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/StrategyOut'
+                type: array
+                title: Response Read Strategy Versions Market Strategies Get
+  /market/strategy/options:
+    get:
+      tags:
+      - market-admin
+      summary: Read Strategy Options
+      description: Valores oficiales soportados por la API para un editor frontend.
+      operationId: read_strategy_options_market_strategy_options_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyOptionsOut'
+  /market/strategy/audit:
+    get:
+      tags:
+      - market-admin
+      summary: Read Strategy Audit
+      description: 'AD6: actor, versión, diferencias y primer ciclo efectivo. Solo
+        lectura.
 
-    ValidationError:
-      type: object
-      required:
-        - loc
-        - msg
-        - type
+
+        strategy_configs es un historial versionado: los parámetros nunca se
+
+        sobrescriben; únicamente evolucionan status y effective_from_cycle_id.'
+      operationId: read_strategy_audit_market_strategy_audit_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StrategyAuditOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/offers:
+    get:
+      tags:
+      - market-admin
+      summary: Read Local Offers
+      description: Ofertas seller de nuestra ciudad, no reemplaza al libro del feed.
+      operationId: read_local_offers_market_offers_get
+      parameters:
+      - name: cycleId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+          title: Cycleid
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocalOffersOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/swaps:
+    get:
+      tags:
+      - market-admin
+      summary: Read Swaps
+      operationId: read_swaps_market_swaps_get
+      parameters:
+      - name: cycleId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 64
+          - type: 'null'
+          title: Cycleid
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 32
+          - type: 'null'
+          title: Status
+      - name: role
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(PROPOSER|ACCEPTOR)$
+          - type: 'null'
+          title: Role
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwapsOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/swaps/{record_id}:
+    get:
+      tags:
+      - market-admin
+      summary: Read Swap
+      operationId: read_swap_market_swaps__record_id__get
+      parameters:
+      - name: record_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Record Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SwapOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/cycle-metrics/compare:
+    get:
+      tags:
+      - market-rf06
+      summary: Compare Cycle Metrics
+      operationId: compare_cycle_metrics_market_cycle_metrics_compare_get
+      parameters:
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          default: 50
+          title: Limit
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(IN_PROGRESS|AWAITING_SETTLEMENT|AWAITING_TRANSPORT|FINAL)$
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleMetricsCompareOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /market/cycle-metrics:
+    get:
+      tags:
+      - market-rf06
+      summary: Get Cycle Metric
+      operationId: get_cycle_metric_market_cycle_metrics_get
+      parameters:
+      - name: cycleId
+        in: query
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+          title: Cycleid
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleMetricOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /audit/intercity:
+    get:
+      tags:
+      - audit-v3
+      summary: Intercity Audit
+      operationId: intercity_audit_audit_intercity_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: cycleId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+      - name: idpk
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idpk
+      - name: msgId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msgid
+      - name: cityId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cityid
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: reasonCode
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoncode
+      - name: direction
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - INBOUND
+            - OUTBOUND
+            type: string
+          - type: 'null'
+          title: Direction
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /audit/wallet-events:
+    get:
+      tags:
+      - audit-v3
+      summary: Wallet Event Audit
+      operationId: wallet_event_audit_audit_wallet_events_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: cycleId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+      - name: idpk
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idpk
+      - name: swapId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swapid
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /audit/reconciliations:
+    get:
+      tags:
+      - audit-v3
+      summary: Reconciliation Audit
+      operationId: reconciliation_audit_audit_reconciliations_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: cycleId
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 10000
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health:
+    get:
+      summary: Health
+      description: 'HEALTHCHECK real: verifica que el proceso y PostgreSQL respondan.'
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Health Health Get
+  /internal/events:
+    post:
+      summary: Ingest Event
+      description: 'Endpoint usado SOLO por connector.
+
+
+        idpk es único, por lo que un mensaje redelivered no genera duplicados: si
+        ya existe,
+
+        devolvemos el registro almacenado y connector puede hacer ACK con seguridad.'
+      operationId: ingest_event_internal_events_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventPayload'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /internal/protocol/errors:
+    post:
+      summary: Ingest Protocol Error
+      operationId: ingest_protocol_error_internal_protocol_errors_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProtocolErrorPayload'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtocolErrorOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /history/{event_id}:
+    get:
+      summary: History Detail
+      operationId: history_detail_history__event_id__get
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Event Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /history:
+    get:
+      summary: History
+      description: 'Historial paginado y filtrable.
+
+
+        Filtros cubiertos: id, idpk, type, receivedAt, validUntil, metaContent,
+
+        constraints (JSON exacto) y cada propiedad de demands: city, demand y unit.'
+      operationId: history_history_get
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+          title: Page
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 25
+          title: Limit
+      - name: id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          title: Id
+      - name: idpk
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Idpk
+      - name: type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+      - name: receivedAt
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Receivedat
+      - name: validUntil
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Validuntil
+      - name: metaContent
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Metacontent
+      - name: constraints
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Constraints
+      - name: city
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: City
+      - name: demand
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Demand
+      - name: unit
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Unit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryOut'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    AuditAnomalyListOut:
       properties:
-        loc:
-          type: array
+        total:
+          type: integer
+          title: Total
+        items:
           items:
-            oneOf:
-              - type: string
-              - type: integer
-        msg:
-          type: string
-        type:
-          type: string
-
-    HTTPValidationError:
-      type: object
-      properties:
-        detail:
+            $ref: '#/components/schemas/AuditAnomalyOut'
           type: array
-          items:
-            $ref: "#/components/schemas/ValidationError"
-
-    NegotiationCreate:
+          title: Items
       type: object
       required:
-        - cycleId
-        - idpk
-        - direction
-        - requestedQuantity
-        - offeredPrice
-      properties:
-        cycleId:
-          type: string
-          description: Identificador del ciclo asociado.
-        idpk:
-          type: string
-          format: uuid
-          description: Identificador lógico utilizado para idempotencia.
-        direction:
-          type: string
-          enum:
-            - give
-            - take
-        requestedQuantity:
-          $ref: "#/components/schemas/DecimalInputPositive"
-        offeredPrice:
-          $ref: "#/components/schemas/DecimalInputNonNegative"
-
-    NegotiationOut:
-      type: object
-      required:
-        - id
-        - idpk
-        - cycleId
-        - direction
-        - requestedQuantity
-        - offeredPrice
-        - status
-        - createdAt
-        - updatedAt
+      - total
+      - items
+      title: AuditAnomalyListOut
+    AuditAnomalyOut:
       properties:
         id:
           type: integer
-        idpk:
-          type: string
-        cycleId:
-          type: string
-        direction:
-          type: string
-          description: |
-            Dirección de la negociación.
-            Valores actuales conocidos: give, take.
-        requestedQuantity:
-          $ref: "#/components/schemas/DecimalString"
-        offeredPrice:
-          $ref: "#/components/schemas/DecimalString"
-        status:
-          type: string
-          description: |
-            Estado actual de la negociación.
-            Valores conocidos:
-            PENDING_PUBLICATION, PROPOSED, ACKNOWLEDGED,
-            CONFIRMED, PAID, REJECTED y TIMEOUT.
-        confirmedEnergy:
-          type:
-            - string
-            - "null"
-          default: null
-        confirmedPrice:
-          type:
-            - string
-            - "null"
-          default: null
-        paymentQuantity:
-          type:
-            - string
-            - "null"
-          default: null
-        deadlineAt:
-          type:
-            - string
-            - "null"
-          format: date-time
-          default: null
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
-    NegotiationsOut:
-      type: object
-      required:
-        - total
-        - items
-      properties:
-        total:
-          type: integer
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/NegotiationOut"
-
-    LedgerEntryOut:
-      type: object
-      required:
-        - sequence
-        - operationType
-        - budgetDelta
-        - energyDelta
-        - budgetAfter
-        - energyAfter
-        - appliedAt
-        - details
-      properties:
-        sequence:
-          type: integer
-        operationType:
-          type: string
-          description: |
-            Tipo de operación del ledger.
-            Valores actuales conocidos incluyen TRANSFER_IN,
-            DEMAND_STATEMENT, GIVE_CONFIRMED, TAKE_CONFIRMED,
-            PAYMENT_RECEIVED, PAYMENT_SENT y BUDGET_CARRYOVER.
-            BUDGET_CARRYOVER traslada solo dinero; details identifica ciclo origen,
-            secuencia y ajuste aplicado, sin duplicar transferencias.
-        budgetDelta:
-          $ref: "#/components/schemas/DecimalString"
-        energyDelta:
-          $ref: "#/components/schemas/DecimalString"
-        budgetAfter:
-          $ref: "#/components/schemas/DecimalString"
-        energyAfter:
-          $ref: "#/components/schemas/DecimalString"
-        appliedAt:
-          type: string
-          format: date-time
-        details:
-          type: object
-          additionalProperties: true
-
-    NegotiationReportOut:
-      description: Versión de reporte. PUBLISHED acredita publicación, no aceptación de la central.
-      type: object
-      required:
-        - msgId
-        - idpk
-        - budgetBalance
-        - energyBalance
-        - createdAt
-      properties:
-        status:
-          type: string
-          enum: [PENDING, PUBLISHED, DEFERRED, EXPIRED, REJECTED, SUPERSEDED]
-          default: PENDING
-        reason:
-          type: [string, "null"]
-          default: null
+          title: Id
         msgId:
-          type: string
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msgid
         idpk:
-          type: string
-        budgetBalance:
-          $ref: "#/components/schemas/DecimalString"
-        energyBalance:
-          $ref: "#/components/schemas/DecimalString"
-        createdAt:
-          type: string
-          format: date-time
-        sentAt:
-          type:
-            - string
-            - "null"
-          format: date-time
-          default: null
-
-    CycleSummaryOut:
-      type: object
-      required:
-        - cycleId
-        - budgetBalance
-        - energyBalance
-        - lastOperationType
-        - lastOperationAt
-        - reported
-      properties:
-        negotiationOpen:
-          type: boolean
-          default: false
-          description: La central abrió el ciclo y su ventana de negociación sigue vigente, incluido el periodo de cierre.
-        validUntil:
-          type: [string, "null"]
-          format: date-time
-          default: null
-          description: Cierre comunicado por la central; cycleId se mantiene opaco.
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idpk
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
         cycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+        sender:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sender
+        status:
           type: string
-        budgetBalance:
-          $ref: "#/components/schemas/DecimalString"
-        energyBalance:
-          $ref: "#/components/schemas/DecimalString"
-        lastOperationType:
-          type:
-            - string
-            - "null"
-        lastOperationAt:
-          type:
-            - string
-            - "null"
+          enum:
+          - DUPLICATE
+          - DISCARDED
+          - NACKED
+          title: Status
+        reasonCode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoncode
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        receivedAt:
+          type: string
           format: date-time
-        reported:
-          type: boolean
-          description: |
-            Indica que existe un negotiation-report persistido.
-            No implica necesariamente que el reporte ya haya sido publicado.
-
-    CyclesOut:
+          title: Receivedat
+        processedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Processedat
+        relatedMsgId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Relatedmsgid
       type: object
       required:
-        - total
-        - items
+      - id
+      - msgId
+      - idpk
+      - type
+      - cycleId
+      - status
+      - reasonCode
+      - reason
+      - receivedAt
+      - processedAt
+      - relatedMsgId
+      title: AuditAnomalyOut
+    AuditPage:
       properties:
         total:
           type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
         items:
-          type: array
           items:
-            $ref: "#/components/schemas/CycleSummaryOut"
-
-    CycleDetailOut:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Items
       type: object
       required:
-        - cycleId
-        - statusStatement
-        - fundsReceived
-        - demandStatements
-        - negotiations
-        - negotiationReport
-        - finalBudgetBalance
-        - finalEnergyBalance
-        - lastOperation
-        - reconstructedBudgetBalance
-        - reconstructedEnergyBalance
-        - snapshotConsistent
-        - ledger
+      - total
+      - offset
+      - limit
+      - items
+      title: AuditPage
+    BuyBidIn:
       properties:
-        negotiationOpen:
-          type: boolean
-          default: false
-          description: La central abrió el ciclo y su ventana de negociación sigue vigente, incluido el periodo de cierre.
-        validUntil:
-          type: [string, "null"]
-          format: date-time
-          default: null
-          description: Cierre comunicado por la central; cycleId se mantiene opaco.
         cycleId:
           type: string
-        statusStatement:
-          type: object
-          additionalProperties: true
-          description: |
-            Contenido data del último status-statement asociado al ciclo.
-            Habitualmente contiene energy y validUntil según el contrato
-            del protocolo v2.
-          examples:
-            - energy:
-                generationCapacity: 1234512
-                consumption: 1444121
-                generationCost: 210
-              validUntil: "2026-09-09T03:20:00Z"
-        fundsReceived:
-          type: array
-          items:
-            $ref: "#/components/schemas/LedgerEntryOut"
-        demandStatements:
-          type: array
-          items:
-            $ref: "#/components/schemas/LedgerEntryOut"
-        negotiations:
-          type: array
-          items:
-            $ref: "#/components/schemas/NegotiationOut"
-        negotiationReports:
-          type: array
-          description: Historial de versiones en orden de creación; los retries conservan su operación.
-          items:
-            $ref: "#/components/schemas/NegotiationReportOut"
-        negotiationReport:
-          description: Última versión local, incluidas correcciones; consultar status antes de interpretar sus balances.
-          anyOf:
-            - $ref: "#/components/schemas/NegotiationReportOut"
-            - type: "null"
-        finalBudgetBalance:
-          description: Balance de la última versión si está publicada; en otro caso, balance actual del ledger. No acredita aceptación central.
-          $ref: "#/components/schemas/DecimalString"
-        finalEnergyBalance:
-          $ref: "#/components/schemas/DecimalString"
-        lastOperation:
-          anyOf:
-            - $ref: "#/components/schemas/LedgerEntryOut"
-            - type: "null"
-        reconstructedBudgetBalance:
-          $ref: "#/components/schemas/DecimalString"
-        reconstructedEnergyBalance:
-          $ref: "#/components/schemas/DecimalString"
-        snapshotConsistent:
-          type: boolean
-        ledger:
-          type: array
-          items:
-            $ref: "#/components/schemas/LedgerEntryOut"
-
-    ConnectivityItemOut:
+          maxLength: 64
+          minLength: 1
+          title: Cycleid
+        offerId:
+          type: string
+          minLength: 1
+          title: Offerid
+        quantity:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Quantity
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+      additionalProperties: false
       type: object
       required:
-        - destination
-        - distance
-        - transportCost
-        - enabled
+      - cycleId
+      - offerId
+      - quantity
+      - idpk
+      title: BuyBidIn
+    ConnectivityItemOut:
       properties:
         destination:
           type: string
+          title: Destination
         distance:
           type: number
+          title: Distance
         transportCost:
           type: number
+          title: Transportcost
         enabled:
           type: boolean
-
-    ConnectivityOut:
+          title: Enabled
       type: object
       required:
-        - timestamp
-        - total
-        - items
+      - destination
+      - distance
+      - transportCost
+      - enabled
+      title: ConnectivityItemOut
+    ConnectivityOut:
       properties:
         timestamp:
           type: string
           format: date-time
+          title: Timestamp
         total:
           type: integer
+          title: Total
         items:
-          type: array
           items:
-            $ref: "#/components/schemas/ConnectivityItemOut"
-
-    AuditAnomalyOut:
+            $ref: '#/components/schemas/ConnectivityItemOut'
+          type: array
+          title: Items
       type: object
       required:
-        - id
-        - msgId
-        - idpk
-        - type
-        - cycleId
-        - status
-        - reasonCode
-        - reason
-        - receivedAt
-        - processedAt
-        - relatedMsgId
+      - timestamp
+      - total
+      - items
+      title: ConnectivityOut
+    CycleDetailOut:
+      properties:
+        negotiationOpen:
+          type: boolean
+          title: Negotiationopen
+          default: false
+        validUntil:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Validuntil
+        cycleId:
+          type: string
+          title: Cycleid
+        statusStatement:
+          additionalProperties: true
+          type: object
+          title: Statusstatement
+        fundsReceived:
+          items:
+            $ref: '#/components/schemas/LedgerEntryOut'
+          type: array
+          title: Fundsreceived
+        demandStatements:
+          items:
+            $ref: '#/components/schemas/LedgerEntryOut'
+          type: array
+          title: Demandstatements
+        negotiations:
+          items:
+            $ref: '#/components/schemas/NegotiationOut'
+          type: array
+          title: Negotiations
+        negotiationReports:
+          items:
+            $ref: '#/components/schemas/NegotiationReportOut'
+          type: array
+          title: Negotiationreports
+        negotiationReport:
+          anyOf:
+          - $ref: '#/components/schemas/NegotiationReportOut'
+          - type: 'null'
+        finalBudgetBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Finalbudgetbalance
+        finalEnergyBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Finalenergybalance
+        lastOperation:
+          anyOf:
+          - $ref: '#/components/schemas/LedgerEntryOut'
+          - type: 'null'
+        reconstructedBudgetBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Reconstructedbudgetbalance
+        reconstructedEnergyBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Reconstructedenergybalance
+        snapshotConsistent:
+          type: boolean
+          title: Snapshotconsistent
+        ledger:
+          items:
+            $ref: '#/components/schemas/LedgerEntryOut'
+          type: array
+          title: Ledger
+      type: object
+      required:
+      - cycleId
+      - statusStatement
+      - fundsReceived
+      - demandStatements
+      - negotiations
+      - negotiationReport
+      - finalBudgetBalance
+      - finalEnergyBalance
+      - lastOperation
+      - reconstructedBudgetBalance
+      - reconstructedEnergyBalance
+      - snapshotConsistent
+      - ledger
+      title: CycleDetailOut
+    CycleHistoryBidOut:
+      properties:
+        idpk:
+          type: string
+          title: Idpk
+        msgId:
+          type: string
+          title: Msgid
+        direction:
+          type: string
+          title: Direction
+        offerId:
+          type: string
+          title: Offerid
+        counterpartCityId:
+          type: string
+          title: Counterpartcityid
+        quantity:
+          type: integer
+          title: Quantity
+        status:
+          type: string
+          title: Status
+        rejectionReason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rejectionreason
+        availableOnRejection:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Availableonrejection
+        acceptedPricePerEnergy:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Acceptedpriceperenergy
+        swapId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swapid
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        respondedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Respondedat
+      type: object
+      required:
+      - idpk
+      - msgId
+      - direction
+      - offerId
+      - counterpartCityId
+      - quantity
+      - status
+      - createdAt
+      title: CycleHistoryBidOut
+    CycleHistoryEffectOut:
+      properties:
+        sequence:
+          type: integer
+          title: Sequence
+        operationType:
+          type: string
+          title: Operationtype
+        budgetDelta:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Budgetdelta
+        energyDelta:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energydelta
+        budgetAfter:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Budgetafter
+        energyAfter:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energyafter
+        appliedAt:
+          type: string
+          format: date-time
+          title: Appliedat
+        details:
+          additionalProperties: true
+          type: object
+          title: Details
+        idpk:
+          type: string
+          title: Idpk
+        sourceMsgId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sourcemsgid
+      type: object
+      required:
+      - sequence
+      - operationType
+      - budgetDelta
+      - energyDelta
+      - budgetAfter
+      - energyAfter
+      - appliedAt
+      - details
+      - idpk
+      title: CycleHistoryEffectOut
+    CycleHistoryOfferOut:
+      properties:
+        offerId:
+          type: string
+          title: Offerid
+        cityId:
+          type: string
+          title: Cityid
+        isLocal:
+          type: boolean
+          title: Islocal
+        initialQuantity:
+          type: integer
+          title: Initialquantity
+        remaining:
+          type: integer
+          title: Remaining
+        pricePerEnergy:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Priceperenergy
+        status:
+          type: string
+          title: Status
+        publishedAt:
+          type: string
+          format: date-time
+          title: Publishedat
+        lastUpdatedAt:
+          type: string
+          format: date-time
+          title: Lastupdatedat
+        withdrawnAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Withdrawnat
+      type: object
+      required:
+      - offerId
+      - cityId
+      - isLocal
+      - initialQuantity
+      - remaining
+      - pricePerEnergy
+      - status
+      - publishedAt
+      - lastUpdatedAt
+      title: CycleHistoryOfferOut
+    CycleHistoryOfferRevisionOut:
+      properties:
+        type:
+          type: string
+          title: Type
+        msgId:
+          type: string
+          title: Msgid
+        idpk:
+          type: string
+          title: Idpk
+        offerId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Offerid
+        remaining:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Remaining
+        pricePerEnergy:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Priceperenergy
+        publicationStatus:
+          type: string
+          title: Publicationstatus
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        publishedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Publishedat
+      type: object
+      required:
+      - type
+      - msgId
+      - idpk
+      - publicationStatus
+      - createdAt
+      title: CycleHistoryOfferRevisionOut
+    CycleHistoryOut:
+      properties:
+        cycleId:
+          type: string
+          title: Cycleid
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        validUntil:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Validuntil
+        schedulerState:
+          type: string
+          title: Schedulerstate
+        closedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Closedat
+        strategyVersion:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Strategyversion
+        marketOpensAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Marketopensat
+        marketLastOfferAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Marketlastofferat
+        marketLastBidAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Marketlastbidat
+        marketClosesAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Marketclosesat
+        statusMsgId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Statusmsgid
+        statusIdpk:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Statusidpk
+        statusStatement:
+          additionalProperties: true
+          type: object
+          title: Statusstatement
+        funding:
+          items:
+            $ref: '#/components/schemas/CycleHistoryEffectOut'
+          type: array
+          title: Funding
+        offers:
+          items:
+            $ref: '#/components/schemas/CycleHistoryOfferOut'
+          type: array
+          title: Offers
+        offerRevisions:
+          items:
+            $ref: '#/components/schemas/CycleHistoryOfferRevisionOut'
+          type: array
+          title: Offerrevisions
+        bids:
+          items:
+            $ref: '#/components/schemas/CycleHistoryBidOut'
+          type: array
+          title: Bids
+        swaps:
+          items:
+            $ref: '#/components/schemas/CycleHistorySwapOut'
+          type: array
+          title: Swaps
+        trades:
+          items:
+            $ref: '#/components/schemas/CycleHistoryTradeOut'
+          type: array
+          title: Trades
+        settlements:
+          items:
+            $ref: '#/components/schemas/CycleHistorySettlementOut'
+          type: array
+          title: Settlements
+        negotiationReports:
+          items:
+            $ref: '#/components/schemas/NegotiationReportOut'
+          type: array
+          title: Negotiationreports
+        lastOperation:
+          anyOf:
+          - $ref: '#/components/schemas/CycleHistoryEffectOut'
+          - type: 'null'
+        ledger:
+          items:
+            $ref: '#/components/schemas/CycleHistoryEffectOut'
+          type: array
+          title: Ledger
+        budgetBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Budgetbalance
+        energyBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energybalance
+      type: object
+      required:
+      - cycleId
+      - createdAt
+      - schedulerState
+      - budgetBalance
+      - energyBalance
+      title: CycleHistoryOut
+    CycleHistorySettlementOut:
+      properties:
+        settlementId:
+          type: string
+          title: Settlementid
+        coverage:
+          type: integer
+          title: Coverage
+        kwhHeld:
+          type: integer
+          title: Kwhheld
+        deficit:
+          type: integer
+          title: Deficit
+        pricePerEnergy:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Priceperenergy
+        total:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Total
+        balanceAfter:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Balanceafter
+        recordedAt:
+          type: string
+          format: date-time
+          title: Recordedat
+      type: object
+      required:
+      - settlementId
+      - coverage
+      - kwhHeld
+      - deficit
+      - pricePerEnergy
+      - total
+      - balanceAfter
+      - recordedAt
+      title: CycleHistorySettlementOut
+    CycleHistorySwapOut:
+      properties:
+        idpk:
+          type: string
+          title: Idpk
+        swapId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swapid
+        role:
+          type: string
+          title: Role
+        counterpartCityId:
+          type: string
+          title: Counterpartcityid
+        giveAsset:
+          type: string
+          title: Giveasset
+        giveAmount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Giveamount
+        takeAsset:
+          type: string
+          title: Takeasset
+        takeAmount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Takeamount
+        memo:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Memo
+        status:
+          type: string
+          title: Status
+        rejectionReason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rejectionreason
+        sourceBidIdpk:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sourcebididpk
+        proposalHttpAcceptedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Proposalhttpacceptedat
+        expiresAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expiresat
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        settledAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Settledat
+      type: object
+      required:
+      - idpk
+      - role
+      - counterpartCityId
+      - giveAsset
+      - giveAmount
+      - takeAsset
+      - takeAmount
+      - status
+      - createdAt
+      title: CycleHistorySwapOut
+    CycleHistoryTradeOut:
+      properties:
+        swapId:
+          type: string
+          title: Swapid
+        offerId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Offerid
+        role:
+          type: string
+          title: Role
+        seller:
+          type: string
+          title: Seller
+        buyer:
+          type: string
+          title: Buyer
+        quantity:
+          type: integer
+          title: Quantity
+        pricePerEnergy:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Priceperenergy
+        energyTotal:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energytotal
+        transportPerEnergy:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Transportperenergy
+        transportTotal:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Transporttotal
+        routeEnabled:
+          type: boolean
+          title: Routeenabled
+        recordedAt:
+          type: string
+          format: date-time
+          title: Recordedat
+      type: object
+      required:
+      - swapId
+      - role
+      - seller
+      - buyer
+      - quantity
+      - pricePerEnergy
+      - energyTotal
+      - transportPerEnergy
+      - transportTotal
+      - routeEnabled
+      - recordedAt
+      title: CycleHistoryTradeOut
+    CycleMetricOut:
+      properties:
+        cycleId:
+          type: string
+          title: Cycleid
+        strategyVersion:
+          type: integer
+          title: Strategyversion
+        spanSeconds:
+          type: integer
+          title: Spanseconds
+        selectionPolicy:
+          type: string
+          title: Selectionpolicy
+        acceptancePolicy:
+          type: string
+          title: Acceptancepolicy
+        deficitKwh:
+          type: integer
+          title: Deficitkwh
+        boughtKwh:
+          type: integer
+          title: Boughtkwh
+        coveredKwh:
+          type: integer
+          title: Coveredkwh
+        coverageRate:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Coveragerate
+        rejectedBids:
+          type: integer
+          title: Rejectedbids
+        rejectedIncomingBids:
+          type: integer
+          title: Rejectedincomingbids
+        buyCost:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Buycost
+        transportCost:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Transportcost
+        settlementCost:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Settlementcost
+        realCost:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Realcost
+        baselineCost:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Baselinecost
+        baselineSource:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Baselinesource
+        savingsVsBaseline:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Savingsvsbaseline
+        missingTransportTrades:
+          type: integer
+          title: Missingtransporttrades
+        status:
+          type: string
+          title: Status
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+      type: object
+      required:
+      - cycleId
+      - strategyVersion
+      - spanSeconds
+      - selectionPolicy
+      - acceptancePolicy
+      - deficitKwh
+      - boughtKwh
+      - coveredKwh
+      - coverageRate
+      - rejectedBids
+      - rejectedIncomingBids
+      - buyCost
+      - transportCost
+      - settlementCost
+      - realCost
+      - baselineCost
+      - baselineSource
+      - savingsVsBaseline
+      - missingTransportTrades
+      - status
+      - createdAt
+      - updatedAt
+      title: CycleMetricOut
+    CycleMetricsCompareOut:
+      properties:
+        total:
+          type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
+        items:
+          items:
+            $ref: '#/components/schemas/CycleMetricOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - offset
+      - limit
+      - items
+      title: CycleMetricsCompareOut
+    CycleSummaryOut:
+      properties:
+        negotiationOpen:
+          type: boolean
+          title: Negotiationopen
+          default: false
+        validUntil:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Validuntil
+        cycleId:
+          type: string
+          title: Cycleid
+        budgetBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Budgetbalance
+        energyBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energybalance
+        lastOperationType:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Lastoperationtype
+        lastOperationAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Lastoperationat
+        reported:
+          type: boolean
+          title: Reported
+      type: object
+      required:
+      - cycleId
+      - budgetBalance
+      - energyBalance
+      - lastOperationType
+      - lastOperationAt
+      - reported
+      title: CycleSummaryOut
+    CyclesOut:
+      properties:
+        total:
+          type: integer
+          title: Total
+        items:
+          items:
+            $ref: '#/components/schemas/CycleSummaryOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - items
+      title: CyclesOut
+    DemandPayload:
+      properties:
+        city:
+          type: string
+          title: City
+        demand:
+          type: number
+          title: Demand
+        unit:
+          type: string
+          title: Unit
+      type: object
+      required:
+      - city
+      - demand
+      - unit
+      title: DemandPayload
+    DistanceTableOut:
       properties:
         id:
           type: integer
+          title: Id
         msgId:
-          type:
-            - string
-            - "null"
-        idpk:
-          type:
-            - string
-            - "null"
-        type:
-          type:
-            - string
-            - "null"
-        cycleId:
-          type:
-            - string
-            - "null"
-        status:
           type: string
-          enum:
-            - DUPLICATE
-            - DISCARDED
-            - NACKED
-        reasonCode:
-          type:
-            - string
-            - "null"
-        reason:
-          type:
-            - string
-            - "null"
+          title: Msgid
+        idpk:
+          type: string
+          title: Idpk
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
         receivedAt:
           type: string
           format: date-time
-        processedAt:
-          type:
-            - string
-            - "null"
-          format: date-time
-        relatedMsgId:
-          type:
-            - string
-            - "null"
-
-    AuditAnomalyListOut:
+          title: Receivedat
+        distances:
+          additionalProperties: true
+          type: object
+          title: Distances
+        cycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+        disabledRouteTransportCost:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Disabledroutetransportcost
       type: object
       required:
-        - total
-        - items
+      - id
+      - msgId
+      - idpk
+      - timestamp
+      - receivedAt
+      - distances
+      title: DistanceTableOut
+    EventOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        type:
+          type: string
+          title: Type
+        packageBody:
+          $ref: '#/components/schemas/PackageBodyPayload'
+        receivedAt:
+          type: string
+          format: date-time
+          title: Receivedat
+      type: object
+      required:
+      - id
+      - idpk
+      - type
+      - packageBody
+      - receivedAt
+      title: EventOut
+    EventPayload:
+      properties:
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        type:
+          type: string
+          const: demand-set
+          title: Type
+        packageBody:
+          $ref: '#/components/schemas/PackageBodyPayload'
+      type: object
+      required:
+      - idpk
+      - type
+      - packageBody
+      title: EventPayload
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HistoryOut:
+      properties:
+        page:
+          type: integer
+          title: Page
+        limit:
+          type: integer
+          title: Limit
+        total:
+          type: integer
+          title: Total
+        items:
+          items:
+            $ref: '#/components/schemas/EventOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - page
+      - limit
+      - total
+      - items
+      title: HistoryOut
+    InboundMessageAuditIn:
+      properties:
+        status:
+          type: string
+          enum:
+          - DISCARDED
+          - NACKED
+          title: Status
+        msgId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msgid
+        idpk:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idpk
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        cycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+        sender:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sender
+        payload:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Payload
+        rawPayload:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rawpayload
+        reasonCode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoncode
+        reason:
+          type: string
+          minLength: 1
+          title: Reason
+      type: object
+      required:
+      - status
+      - reason
+      title: InboundMessageAuditIn
+    InboundMessageAuditListOut:
       properties:
         total:
           type: integer
+          title: Total
         items:
-          type: array
           items:
-            $ref: "#/components/schemas/AuditAnomalyOut"
+            $ref: '#/components/schemas/InboundMessageAuditOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - items
+      title: InboundMessageAuditListOut
+    InboundMessageAuditOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        msgId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Msgid
+        idpk:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idpk
+        type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Type
+        cycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+        status:
+          type: string
+          title: Status
+        reasonCode:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reasoncode
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        receivedAt:
+          type: string
+          format: date-time
+          title: Receivedat
+        processedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Processedat
+        relatedMsgId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Relatedmsgid
+        payload:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Payload
+        rawPayload:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rawpayload
+      type: object
+      required:
+      - id
+      - msgId
+      - idpk
+      - type
+      - cycleId
+      - status
+      - reasonCode
+      - reason
+      - receivedAt
+      - processedAt
+      - relatedMsgId
+      - payload
+      - rawPayload
+      title: InboundMessageAuditOut
+    LedgerEntryOut:
+      properties:
+        sequence:
+          type: integer
+          title: Sequence
+        operationType:
+          type: string
+          title: Operationtype
+        budgetDelta:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Budgetdelta
+        energyDelta:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energydelta
+        budgetAfter:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Budgetafter
+        energyAfter:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energyafter
+        appliedAt:
+          type: string
+          format: date-time
+          title: Appliedat
+        details:
+          additionalProperties: true
+          type: object
+          title: Details
+      type: object
+      required:
+      - sequence
+      - operationType
+      - budgetDelta
+      - energyDelta
+      - budgetAfter
+      - energyAfter
+      - appliedAt
+      - details
+      title: LedgerEntryOut
+    LocalOfferOut:
+      properties:
+        offerId:
+          type: string
+          title: Offerid
+        cycleId:
+          type: string
+          title: Cycleid
+        cityId:
+          type: string
+          title: Cityid
+        initialQuantity:
+          type: integer
+          title: Initialquantity
+        remaining:
+          type: integer
+          title: Remaining
+        pricePerEnergy:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Priceperenergy
+        status:
+          type: string
+          title: Status
+        publishedAt:
+          type: string
+          format: date-time
+          title: Publishedat
+        lastUpdatedAt:
+          type: string
+          format: date-time
+          title: Lastupdatedat
+        withdrawnAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Withdrawnat
+      type: object
+      required:
+      - offerId
+      - cycleId
+      - cityId
+      - initialQuantity
+      - remaining
+      - pricePerEnergy
+      - status
+      - publishedAt
+      - lastUpdatedAt
+      - withdrawnAt
+      title: LocalOfferOut
+    LocalOffersOut:
+      properties:
+        total:
+          type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
+        items:
+          items:
+            $ref: '#/components/schemas/LocalOfferOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - offset
+      - limit
+      - items
+      title: LocalOffersOut
+    MarketBookOfferOut:
+      properties:
+        cycleId:
+          type: string
+          title: Cycleid
+        cityId:
+          type: string
+          title: Cityid
+        offerId:
+          type: string
+          title: Offerid
+        quantity:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Quantity
+        remaining:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Remaining
+        pricePerEnergy:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Priceperenergy
+        lastEventAt:
+          type: string
+          format: date-time
+          title: Lasteventat
+        lastEventMsgId:
+          type: string
+          title: Lasteventmsgid
+        state:
+          type: string
+          title: State
+        uncertain:
+          type: boolean
+          title: Uncertain
+        stale:
+          type: boolean
+          title: Stale
+        distanceMeters:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Distancemeters
+        routeEnabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Routeenabled
+        transportRate:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Transportrate
+        transportPerEnergy:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Transportperenergy
+        effectivePricePerEnergy:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Effectivepriceperenergy
+      type: object
+      required:
+      - cycleId
+      - cityId
+      - offerId
+      - lastEventAt
+      - lastEventMsgId
+      - state
+      - uncertain
+      - stale
+      title: MarketBookOfferOut
+    MarketBookOut:
+      properties:
+        cycleId:
+          type: string
+          title: Cycleid
+        asOf:
+          type: string
+          format: date-time
+          title: Asof
+        marketClosed:
+          type: boolean
+          title: Marketclosed
+        marketClosedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Marketclosedat
+        feedGapAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Feedgapat
+        lastFeedEventAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Lastfeedeventat
+        freshness:
+          type: string
+          title: Freshness
+          default: NO_FEED
+        closesAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Closesat
+        distanceTableTimestamp:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Distancetabletimestamp
+        disabledRouteTransportCost:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Disabledroutetransportcost
+        total:
+          type: integer
+          title: Total
+        offers:
+          items:
+            $ref: '#/components/schemas/MarketBookOfferOut'
+          type: array
+          title: Offers
+      type: object
+      required:
+      - cycleId
+      - asOf
+      - marketClosed
+      - total
+      - offers
+      title: MarketBookOut
+    MarketBuyCandidatesOut:
+      properties:
+        cycleId:
+          type: string
+          title: Cycleid
+        asOf:
+          type: string
+          format: date-time
+          title: Asof
+        strategyVersion:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Strategyversion
+        selectionPolicy:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Selectionpolicy
+        spanSeconds:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Spanseconds
+        minBid:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Minbid
+        buyingOpensAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Buyingopensat
+        lastBidAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Lastbidat
+        closesAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Closesat
+        marketClosed:
+          type: boolean
+          title: Marketclosed
+        canBid:
+          type: boolean
+          title: Canbid
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        total:
+          type: integer
+          title: Total
+        candidates:
+          items:
+            $ref: '#/components/schemas/MarketBookOfferOut'
+          type: array
+          title: Candidates
+      type: object
+      required:
+      - cycleId
+      - asOf
+      - marketClosed
+      - canBid
+      - total
+      - candidates
+      title: MarketBuyCandidatesOut
+      description: 'E2-037: orden y elegibilidad de compra, sin enviar un bid.'
+    MarketFeedGapIn:
+      properties:
+        reason:
+          type: string
+          const: RECONNECTED
+          title: Reason
+      type: object
+      required:
+      - reason
+      title: MarketFeedGapIn
+    MarketFeedMessageIn:
+      properties:
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        msgId:
+          type: string
+          format: uuid
+          title: Msgid
+        type:
+          type: string
+          enum:
+          - offer
+          - offer-updated
+          - offer-withdrawn
+          - market-closed
+          title: Type
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        cycleId:
+          type: string
+          minLength: 1
+          title: Cycleid
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+        cityId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cityid
+        sender:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sender
+      additionalProperties: true
+      type: object
+      required:
+      - idpk
+      - msgId
+      - type
+      - timestamp
+      - cycleId
+      - data
+      title: MarketFeedMessageIn
+      description: Forma de los cuatro eventos del feed; las ciudades admiten campos
+        extra.
+    NegotiationCreate:
+      properties:
+        cycleId:
+          type: string
+          title: Cycleid
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        direction:
+          type: string
+          enum:
+          - give
+          - take
+          title: Direction
+        requestedQuantity:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Requestedquantity
+        offeredPrice:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Offeredprice
+      type: object
+      required:
+      - cycleId
+      - idpk
+      - direction
+      - requestedQuantity
+      - offeredPrice
+      title: NegotiationCreate
+    NegotiationOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        idpk:
+          type: string
+          title: Idpk
+        cycleId:
+          type: string
+          title: Cycleid
+        direction:
+          type: string
+          title: Direction
+        requestedQuantity:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Requestedquantity
+        offeredPrice:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Offeredprice
+        status:
+          type: string
+          title: Status
+        confirmedEnergy:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Confirmedenergy
+        confirmedPrice:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Confirmedprice
+        paymentQuantity:
+          anyOf:
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          - type: 'null'
+          title: Paymentquantity
+        deadlineAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Deadlineat
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        updatedAt:
+          type: string
+          format: date-time
+          title: Updatedat
+      type: object
+      required:
+      - id
+      - idpk
+      - cycleId
+      - direction
+      - requestedQuantity
+      - offeredPrice
+      - status
+      - createdAt
+      - updatedAt
+      title: NegotiationOut
+    NegotiationReportOut:
+      properties:
+        status:
+          type: string
+          enum:
+          - PENDING
+          - PUBLISHED
+          - DEFERRED
+          - EXPIRED
+          - REJECTED
+          - SUPERSEDED
+          title: Status
+          default: PENDING
+        reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reason
+        msgId:
+          type: string
+          title: Msgid
+        idpk:
+          type: string
+          title: Idpk
+        budgetBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Budgetbalance
+        energyBalance:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Energybalance
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        sentAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Sentat
+      type: object
+      required:
+      - msgId
+      - idpk
+      - budgetBalance
+      - energyBalance
+      - createdAt
+      title: NegotiationReportOut
+    NegotiationsOut:
+      properties:
+        total:
+          type: integer
+          title: Total
+        items:
+          items:
+            $ref: '#/components/schemas/NegotiationOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - items
+      title: NegotiationsOut
+    OutboundMessageAuditIn:
+      properties:
+        msgId:
+          type: string
+          format: uuid
+          title: Msgid
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        type:
+          type: string
+          title: Type
+        cycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+        targetMsgId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Targetmsgid
+        routingKey:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Routingkey
+        exchange:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Exchange
+        dispatchRequired:
+          type: boolean
+          title: Dispatchrequired
+          default: false
+        payload:
+          additionalProperties: true
+          type: object
+          title: Payload
+      type: object
+      required:
+      - msgId
+      - idpk
+      - type
+      title: OutboundMessageAuditIn
+    OutboundMessageResultIn:
+      properties:
+        status:
+          type: string
+          enum:
+          - PUBLISHED
+          - FAILED
+          title: Status
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+      type: object
+      required:
+      - status
+      title: OutboundMessageResultIn
+    PackageBodyPayload:
+      properties:
+        demands:
+          items:
+            $ref: '#/components/schemas/DemandPayload'
+          type: array
+          title: Demands
+        validUntil:
+          type: string
+          format: date-time
+          title: Validuntil
+        metaContent:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Metacontent
+        constraints:
+          additionalProperties: true
+          type: object
+          title: Constraints
+      type: object
+      required:
+      - demands
+      - validUntil
+      title: PackageBodyPayload
+    ProtocolErrorDataPayload:
+      properties:
+        opensAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Opensat
+        target:
+          type: string
+          format: uuid
+          title: Target
+        message:
+          type: string
+          title: Message
+        cap:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Cap
+        spare:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Spare
+      type: object
+      required:
+      - target
+      - message
+      title: ProtocolErrorDataPayload
+    ProtocolErrorOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        msgId:
+          type: string
+          format: uuid
+          title: Msgid
+        cycleId:
+          type: string
+          title: Cycleid
+        reason:
+          type: string
+          title: Reason
+        code:
+          type: integer
+          title: Code
+        target:
+          type: string
+          format: uuid
+          title: Target
+        message:
+          type: string
+          title: Message
+        cap:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Cap
+        spare:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Spare
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        receivedAt:
+          type: string
+          format: date-time
+          title: Receivedat
+      type: object
+      required:
+      - id
+      - idpk
+      - msgId
+      - cycleId
+      - reason
+      - code
+      - target
+      - message
+      - timestamp
+      - receivedAt
+      title: ProtocolErrorOut
+    ProtocolErrorPayload:
+      properties:
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        msgId:
+          type: string
+          format: uuid
+          title: Msgid
+        type:
+          type: string
+          const: error
+          title: Type
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        sender:
+          type: string
+          const: central
+          title: Sender
+        cycleId:
+          type: string
+          title: Cycleid
+        reason:
+          type: string
+          enum:
+          - REPORT_TOO_EARLY
+          - CYCLE_UNKNOWN
+          - CYCLE_EXPIRED
+          - PRICE_ABOVE_CAP
+          - OVER_CAPACITY
+          title: Reason
+        code:
+          type: integer
+          title: Code
+        data:
+          $ref: '#/components/schemas/ProtocolErrorDataPayload'
+      type: object
+      required:
+      - idpk
+      - msgId
+      - type
+      - timestamp
+      - sender
+      - cycleId
+      - reason
+      - code
+      - data
+      title: ProtocolErrorPayload
+    ProtocolMessageIn:
+      properties:
+        idpk:
+          type: string
+          format: uuid
+          title: Idpk
+        msgId:
+          type: string
+          format: uuid
+          title: Msgid
+        type:
+          type: string
+          title: Type
+        timestamp:
+          type: string
+          format: date-time
+          title: Timestamp
+        cycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cycleid
+        sender:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sender
+        cityId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cityid
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+      additionalProperties: true
+      type: object
+      required:
+      - idpk
+      - msgId
+      - type
+      - timestamp
+      title: ProtocolMessageIn
+      description: Envelope base de los mensajes del protocolo E1.
+    RepriceIn:
+      properties:
+        pricePerEnergy:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Priceperenergy
+      additionalProperties: false
+      type: object
+      required:
+      - pricePerEnergy
+      title: RepriceIn
+    StrategyAuditItemOut:
+      properties:
+        version:
+          type: integer
+          title: Version
+        previousVersion:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Previousversion
+        status:
+          type: string
+          title: Status
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        createdBy:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Createdby
+        effectiveFromCycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Effectivefromcycleid
+        changes:
+          additionalProperties:
+            $ref: '#/components/schemas/StrategyChangeOut'
+          type: object
+          title: Changes
+      type: object
+      required:
+      - version
+      - previousVersion
+      - status
+      - createdAt
+      - createdBy
+      - effectiveFromCycleId
+      - changes
+      title: StrategyAuditItemOut
+    StrategyAuditOut:
+      properties:
+        total:
+          type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
+        items:
+          items:
+            $ref: '#/components/schemas/StrategyAuditItemOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - offset
+      - limit
+      - items
+      title: StrategyAuditOut
+    StrategyChangeOut:
+      properties:
+        before:
+          anyOf:
+          - type: string
+          - type: integer
+          - type: 'null'
+          title: Before
+        after:
+          anyOf:
+          - type: string
+          - type: integer
+          title: After
+      type: object
+      required:
+      - before
+      - after
+      title: StrategyChangeOut
+    StrategyOptionsOut:
+      properties:
+        bidAcceptancePolicies:
+          items:
+            type: string
+          type: array
+          title: Bidacceptancepolicies
+        offerSelectionPolicies:
+          items:
+            type: string
+          type: array
+          title: Offerselectionpolicies
+        minSpanSeconds:
+          type: integer
+          title: Minspanseconds
+        decimalPlaces:
+          type: integer
+          title: Decimalplaces
+      type: object
+      required:
+      - bidAcceptancePolicies
+      - offerSelectionPolicies
+      - minSpanSeconds
+      - decimalPlaces
+      title: StrategyOptionsOut
+    StrategyOut:
+      properties:
+        version:
+          type: integer
+          title: Version
+        status:
+          type: string
+          title: Status
+        offerPriceMarkup:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Offerpricemarkup
+        offerQuantityFraction:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Offerquantityfraction
+        bidAcceptancePolicy:
+          type: string
+          title: Bidacceptancepolicy
+        offerSelectionPolicy:
+          type: string
+          title: Offerselectionpolicy
+        spanSeconds:
+          type: integer
+          title: Spanseconds
+        effectiveFromCycleId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Effectivefromcycleid
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        createdBy:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Createdby
+      type: object
+      required:
+      - version
+      - status
+      - offerPriceMarkup
+      - offerQuantityFraction
+      - bidAcceptancePolicy
+      - offerSelectionPolicy
+      - spanSeconds
+      - effectiveFromCycleId
+      - createdAt
+      - createdBy
+      title: StrategyOut
+    StrategyUpdateIn:
+      properties:
+        offerPriceMarkup:
+          anyOf:
+          - type: number
+            exclusiveMinimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,6}|(?=[\d.]{1,11}0*$)\d{0,6}\.\d{0,4}0*$)
+          title: Offerpricemarkup
+        offerQuantityFraction:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: string
+            pattern: ^(?!^[-+.]*$)[+-]?0*(?:\d{0,6}|(?=[\d.]{1,11}0*$)\d{0,6}\.\d{0,4}0*$)
+          title: Offerquantityfraction
+        bidAcceptancePolicy:
+          type: string
+          title: Bidacceptancepolicy
+        offerSelectionPolicy:
+          type: string
+          title: Offerselectionpolicy
+        spanSeconds:
+          type: integer
+          minimum: 0.0
+          title: Spanseconds
+        expectedVersion:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Expectedversion
+      additionalProperties: false
+      type: object
+      required:
+      - offerPriceMarkup
+      - offerQuantityFraction
+      - bidAcceptancePolicy
+      - offerSelectionPolicy
+      - spanSeconds
+      title: StrategyUpdateIn
+    StrategyViewOut:
+      properties:
+        active:
+          anyOf:
+          - $ref: '#/components/schemas/StrategyOut'
+          - type: 'null'
+        pending:
+          anyOf:
+          - $ref: '#/components/schemas/StrategyOut'
+          - type: 'null'
+        cycleStrategy:
+          anyOf:
+          - $ref: '#/components/schemas/StrategyOut'
+          - type: 'null'
+      type: object
+      required:
+      - active
+      - pending
+      - cycleStrategy
+      title: StrategyViewOut
+    SwapOut:
+      properties:
+        id:
+          type: integer
+          title: Id
+        idpk:
+          type: string
+          title: Idpk
+        swapId:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Swapid
+        cycleId:
+          type: string
+          title: Cycleid
+        role:
+          type: string
+          title: Role
+        counterpartCityId:
+          type: string
+          title: Counterpartcityid
+        giveAsset:
+          type: string
+          title: Giveasset
+        giveAmount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Giveamount
+        takeAsset:
+          type: string
+          title: Takeasset
+        takeAmount:
+          type: string
+          pattern: ^(?!^[-+.]*$)[+-]?0*\d*\.?\d*$
+          title: Takeamount
+        memo:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Memo
+        status:
+          type: string
+          title: Status
+        rejectionReason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Rejectionreason
+        sourceBidIdpk:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Sourcebididpk
+        proposalHttpAcceptedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Proposalhttpacceptedat
+        proposalAttemptCount:
+          type: integer
+          title: Proposalattemptcount
+        proposalLastError:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Proposallasterror
+        acceptAttempts:
+          type: integer
+          title: Acceptattempts
+        acceptAttemptedAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Acceptattemptedat
+        acceptError:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Accepterror
+        expiresAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expiresat
+        createdAt:
+          type: string
+          format: date-time
+          title: Createdat
+        settledAt:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Settledat
+      type: object
+      required:
+      - id
+      - idpk
+      - swapId
+      - cycleId
+      - role
+      - counterpartCityId
+      - giveAsset
+      - giveAmount
+      - takeAsset
+      - takeAmount
+      - memo
+      - status
+      - rejectionReason
+      - sourceBidIdpk
+      - proposalHttpAcceptedAt
+      - proposalAttemptCount
+      - proposalLastError
+      - acceptAttempts
+      - acceptAttemptedAt
+      - acceptError
+      - expiresAt
+      - createdAt
+      - settledAt
+      title: SwapOut
+    SwapsOut:
+      properties:
+        total:
+          type: integer
+          title: Total
+        offset:
+          type: integer
+          title: Offset
+        limit:
+          type: integer
+          title: Limit
+        items:
+          items:
+            $ref: '#/components/schemas/SwapOut'
+          type: array
+          title: Items
+      type: object
+      required:
+      - total
+      - offset
+      - limit
+      - items
+      title: SwapsOut
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: token

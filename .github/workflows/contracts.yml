@@ -38,6 +38,7 @@ jobs:
         env:
           ENERGYSHARK_BACKEND_ROOT: ${{ github.workspace }}/_backend
       - run: python -m pip install -r _backend/master/requirements.txt
+      - run: python -m pip install -r _backend/connector/requirements.txt
       - name: Validar emisores y flujo integrado del backend contra schemas oficiales
         working-directory: _backend/master
         env:

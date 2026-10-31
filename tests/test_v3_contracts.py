@@ -133,6 +133,22 @@ class V3ContractsTests(unittest.TestCase):
         self.assertIn("offerPriceOverride", strategy_fields)
         self.assertIn("offerQuantityCap", strategy_fields)
 
+    def test_public_openapi_documents_market_history_and_feed_uncertainty(self):
+        api = yaml.safe_load((ROOT / "docs/openapi/openapi.yaml").read_text())
+        paths = api["paths"]
+        schemas = api["components"]["schemas"]
+        for route in ("/cycles/{cycle_id}/history", "/audit/anomalies",
+                      "/market/book", "/market/buy-candidates", "/market/swaps",
+                      "/market/cycle-metrics/compare"):
+            self.assertIn(route, paths)
+            self.assertTrue(paths[route]["get"].get("description"), route)
+        self.assertTrue({"offers", "bids", "swaps", "trades", "settlements"} <=
+                        schemas["CycleHistoryOut"]["properties"].keys())
+        self.assertTrue({"freshness", "feedGapAt", "distanceTableTimestamp"} <=
+                        schemas["MarketBookOut"]["properties"].keys())
+        self.assertTrue({"msgId", "idpk", "reasonCode", "relatedMsgId"} <=
+                        schemas["AuditAnomalyOut"]["properties"].keys())
+
     def test_backend_ack_and_nack_emitters_validate_against_course_schemas(self):
         backend = Path(os.environ.get("ENERGYSHARK_BACKEND_ROOT", ROOT.parent / "E0-Arquisis-local"))
         connector = backend / "connector"

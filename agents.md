@@ -1,6 +1,6 @@
 # AGENTS.md — Contexto compartido EnergyShark G10
 
-**Contratos E2 vigentes:** `docs/schemas/v3/` y `docs/openapi/openapi.yaml`, basados en el tag oficial v3.0.2. Los contratos E1/v2 se conservan en sus rutas versionadas; para nuevas funciones E2 se prioriza v3.0.2.
+**Contratos E2 vigentes en Arquisis-G10-Contracts:** `docs/schemas/v3/` y `docs/openapi/openapi.yaml`, basados en el tag oficial v3.0.2. Los contratos E1/v2 se conservan en sus rutas versionadas; para nuevas funciones E2 se prioriza v3.0.2.
 
 ## 1. Propósito
 
@@ -154,7 +154,8 @@ Reglas importantes:
 - Los mensajes enviados por una ciudad incluyen `cityId`.
 - Los mensajes emitidos por la central utilizan `sender: "central"`.
 - Los mensajes ligados a un ciclo incluyen `cycleId`, tratado como string opaco. Las requests directas no incluyen cycleId.
-- La cola observada de KLD es `city.KLD.q`; el publicador adjunta la propiedad AMQP user_id `city.KLD`. El nombre de cola y la identidad AMQP son distintos. distance-table requiere sender central.
+- KLD consume `city.KLD.q` (dirigida) y `market.KLD` (feed). Publica mensajes dirigidos por `energy.x` y ofertas por `market` con routing key `market.offer.KLD`; no declara topología administrada por el curso.
+- En publicaciones propias se usa AMQP `user_id=city.KLD`. Según C23/v3.0.2, los mensajes dirigidos de la Central, incluidos eventos Wallet, llegan con `user_id=central`; `market-closed` llega al feed con `user_id` ausente. El feed no lleva ACK/NACK de protocolo.
 - El contenido específico del mensaje viaja dentro de `data`.
 - Una respuesta utiliza un `msgId` nuevo y referencia el mensaje anterior mediante campos como `data.target` o `data.becauseOf`.
 - Los schemas versionados del repositorio Contracts tienen prioridad sobre ejemplos informales.
@@ -163,7 +164,9 @@ No inventar campos nuevos ni cambiar nombres de campos sin actualizar el contrat
 
 ---
 
-## 5. Negociaciones
+## 5. Negociaciones E1 y mercado E2
+
+Los estados y mensajes `negotiation-proposal`, `give` y `take` que se describen a continuación pertenecen al historial **E1/v2**. No son el flujo comercial vigente de E2.
 
 Estados utilizados por el backend:
 
@@ -190,6 +193,12 @@ Principios importantes:
 - Un retry conserva idpk; una corrección de reporte usa nuevos msgId/idpk. No deduplicar reportes por cycleId.
 - Mantener explícitas las ambigüedades oficiales (422/425 y estructura de penalty), sin imponer supuestos.
 - No usar `sleep(30)` ni timers en memoria para controlar una negociación.
+
+En **E2/v3.0.2**, el mercado usa ofertas en el feed y `bid`, `bid-accepted` y `bid-rejected` dirigidos. Un ACK confirma recepción, no aceptación comercial. Un HTTP `202` de Wallet confirma que recibió la solicitud, no que el swap se liquidó; el hecho final es `swap-settled` o el evento terminal correspondiente. Wallet es la autoridad de los saldos; el ledger local conserva trazabilidad y conciliación. Los cambios de precio, cantidad, span y políticas se versionan y rigen al abrir el siguiente ciclo, sin cambiar la estrategia fijada del ciclo abierto.
+
+El feed puede perder mensajes por TTL de un ciclo o capacidad de 5.000. `GET /market/book` expone `freshness`, `feedGapAt`, `stale`, `uncertain`, la tabla de distancias del ciclo y el precio efectivo. Esas señales no garantizan completitud ni permiten reconstruir ofertas perdidas. Las rutas deshabilitadas emplean la tarifa punitiva oficial cuando el contexto está disponible.
+
+Para Frontend se usan rutas **públicas**: `/cycles/{cycle_id}/history`, `/audit/anomalies`, `/market/book`, `/market/buy-candidates`, `/market/strategy`, `/market/offers`, `/market/swaps` y `/market/cycle-metrics/compare`. `/internal/market/bids` y `/internal/audit/*` son sólo para procesos internos. En RF05, `IDENTITY_MISMATCH` es `reasonCode` de una anomalía `DISCARDED` o `NACKED`, no un estado adicional. La vista RF06 debe separar ciclos pendientes de agregados finales y mostrar la conciliación Wallet por separado.
 
 ---
 

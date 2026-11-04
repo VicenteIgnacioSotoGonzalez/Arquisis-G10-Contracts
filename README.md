@@ -736,3 +736,7 @@ Validación de schemas, ejemplos válidos y rechazos esperados:
 pip install 'jsonschema[format]'
 python -m unittest discover -s tests -v
 ```
+
+## Contratos vigentes del protocolo v3
+
+Los schemas y ejemplos vigentes están en `docs/schemas/v3/` y `docs/examples/v3/`, fijados al tag oficial v3.0.2. `docs/schemas/v3/PROVENANCE.md` registra la fuente y `docs/openapi/openapi.yaml` describe nuestra API. Los materiales v3.0.1 que se incorporaron antes a `main` quedaron sustituidos por este paquete; mantener ambos conjuntos bajo las mismas rutas produciría pruebas y documentación contradictorias. El historial Git conserva esos cambios anteriores.

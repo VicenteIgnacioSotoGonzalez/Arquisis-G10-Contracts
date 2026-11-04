@@ -1,5 +1,11 @@
 # Arquisis-G10-Contracts
 
+## Contratos E2 v3.0.2
+
+Los contratos vigentes de E2 están en [`docs/schemas/v3/`](docs/schemas/v3/PROVENANCE.md), copiados del tag oficial v3.0.2 (commit `62f6cf40768b6e42717d126e528dcd944e5bc0e3`). Los 261 ejemplos oficiales válidos e inválidos están en `docs/examples/v3/`. La API propia E2 está en [`docs/openapi/openapi.yaml`](docs/openapi/openapi.yaml), generada desde FastAPI; el OpenAPI de Wallet oficial está en `docs/openapi/wallet-v3-official.yaml`. Los contratos E1/v2 y su OpenAPI `openapi-v2.yaml` permanecen como referencia histórica.
+
+Ejecutar `python -m pip install -r requirements-test.txt` y `python -m unittest discover -s tests -v` valida ambos protocolos. El CI también descarga el backend público, prueba los ACK/NACK que construye el Connector y ejecuta ensayos seller/buyer con PostgreSQL temporal contra los schemas oficiales vendorizados allí. El contexto compartido está en [`agents.md`](agents.md).
+
 Este repo tiene los contratos utilizados por los componentes del sistema para tener una definición común de los mensajes del protocolo y, posteriormente, de la API HTTP del backend.
 
 Este repo responde al requisito **RDOC04** de la E1, que pide un repositorio de contratos a nivel de organización que contenga los schemas de los mensajes de la mecánica y la especificación OpenAPI de la API propia.
@@ -731,34 +737,6 @@ pip install 'jsonschema[format]'
 python -m unittest discover -s tests -v
 ```
 
-## Contratos v3 — E2-024 (schemas oficiales, v3.0.1)
+## Contratos vigentes del protocolo v3
 
-Los schemas del protocolo v3 y el OpenAPI externo de la wallet son copias exactas del tag oficial `iic2173/energyshark-contracts#v3.0.1`, con procedencia SHA-256 y fixtures propios compatibles. Consulte [`docs/schemas/v3/README.md`](docs/schemas/v3/README.md). La E1 v2 queda sin modificaciones. E2-025 agregara los tests en CI de mensajes que realmente emite el nodo.
-
-## Pruebas de contratos v3 (E2-025)
-
-La suite valida los **46 schemas oficiales v3.0.1** almacenados en
-`docs/schemas/v3/schemas/`, sus hashes SHA-256 frente al manifiesto local,
-los **31 ejemplos válidos** y **18 inválidos** de `docs/examples/v3/`.
-El registro de `$id` / `$ref` se resuelve localmente, sin consultar la red.
-
-Para ejecutar las pruebas de E1 y E2:
-
-```bash
-python3 -m pip install -r requirements-test.txt
-python3 -m unittest discover -s tests -v
-python3 scripts/check_v3_examples.py
-```
-
-El workflow `.github/workflows/contract-tests.yml` ejecuta los mismos
-comandos en cada push y Pull Request. Los tests v2 se mantienen intactos.
-
-**Alcance:** se comprueba la estructura JSON del protocolo oficial. No se
-comprueban con JSON Schema la identidad AMQP `user_id`, los deadlines del
-mercado, el `minBid`, la serialización de bids (AD4), la firma ES256, la
-finalización de swaps por eventos/conciliación wallet (AD5), ni la vigencia de
-la estrategia por ciclo (AD6). Esas reglas pertenecen al backend y requieren
-pruebas unitarias/de integración específicas. La validación de los mensajes
-**reales emitidos por el nodo** y su incorporación a CI entre repositorios
-se completará en la integración posterior (E2-076); estos son fixtures
-sintéticos, no capturas de mensajes productivos.
+Los schemas y ejemplos vigentes están en `docs/schemas/v3/` y `docs/examples/v3/`, fijados al tag oficial v3.0.2. `docs/schemas/v3/PROVENANCE.md` registra la fuente y `docs/openapi/openapi.yaml` describe nuestra API. Los materiales v3.0.1 que se incorporaron antes a `main` quedaron sustituidos por este paquete; mantener ambos conjuntos bajo las mismas rutas produciría pruebas y documentación contradictorias. El historial Git conserva esos cambios anteriores.

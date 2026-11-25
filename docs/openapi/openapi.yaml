@@ -9,11 +9,15 @@ paths:
       - events
       summary: E3-034 - Replay and stream operator events
       description: >-
-        Durable notifications from audit and outbox in categories market, wallet,
-        saga and alert. IDs are contiguous in confirmed publication order.
-        Access requires an Auth0 Bearer JWT with a subject and the read:events
-        scope by default (configurable via SSE_REQUIRED_SCOPE). On reconnect
-        supply Last-Event-ID with the last fully processed event ID.
+        RF01 read-only operator feed shared by authorized operators of KLD.
+        Send Authorization: Bearer <access-token> with an Auth0 JWT, a nonblank
+        subject and the read:events scope by default (configurable via
+        SSE_REQUIRED_SCOPE). Authorization applies to replay and live events.
+        Each connection replays only IDs strictly greater than Last-Event-ID in
+        ascending order, then streams newly published events. IDs are contiguous
+        in confirmed publication order. This version retains the entire
+        published history with no cursor TTL. A missing checkpoint or a gap
+        makes replay unavailable (503 before streaming).
       operationId: stream_events_events_stream_get
       parameters:
       - in: header
@@ -21,34 +25,82 @@ paths:
         required: false
         schema:
           type: string
-          pattern: '^(0|[1-9][0-9]*)$'
+          pattern: '^(?:0|[1-9][0-9]{0,18})?$'
           maxLength: 19
         description: >-
-          Last fully processed SSE ID, from 0 through 9223372036854775807.
-          Omit this header or send 0 to replay from the beginning.
+          Last fully processed SSE ID, in canonical ASCII decimal from 0
+          through 9223372036854775807. Omit this header, leave it empty or send
+          0 to replay from the beginning.
+        example: '21'
       responses:
         '200':
-          description: Streaming, newline-delimited SSE messages and keep-alive comments
+          description: >-
+            Incremental UTF-8 SSE response. After HTTP 200, token expiration,
+            access revocation or a replay read failure closes the connection
+            without a terminal frame or a new HTTP status. On a transient
+            disconnect, reconnect with backoff and the last fully processed ID
+            using valid authorization. The browser client can use streaming
+            fetch to set Authorization and Last-Event-ID. Intermediaries must
+            forward the stream incrementally. OpenAPI describes the media type
+            and examples, while generated clients may buffer the response.
           headers:
             Cache-Control:
               schema:
                 type: string
-              description: no-cache, no-store, no-transform
+              description: Cache policy for the stream.
+              example: no-cache, no-store, no-transform
+            X-Accel-Buffering:
+              schema:
+                type: string
+              description: Requests that compatible reverse proxies disable buffering.
+              example: 'no'
           content:
             text/event-stream:
               schema:
                 type: string
-                description: SSE wire format (id, event, data and heartbeats)
+                description: >-
+                  Each notification has id, event and data lines and ends with a
+                  blank line. The id line is the decimal cursor, event names the
+                  category, and data is JSON with matching id and type.
+                  Comments such as : heartbeat do not advance the cursor.
+              examples:
+                replayAfter21:
+                  summary: Frames returned after sending Last-Event-ID 21
+                  value: |+
+                    id: 22
+                    event: market
+                    data: {"id":22,"type":"market","occurredAt":"2026-11-22T12:30:00Z","cycleId":"ciclo-v3-123","data":{"source":"INBOUND","messageType":"offer","status":"PROCESSED"}}
+
+                    id: 23
+                    event: wallet
+                    data: {"id":23,"type":"wallet","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ciclo-v3-123","data":{"source":"INBOUND","messageType":"swap-settled","status":"PROCESSED"}}
+
+                    id: 24
+                    event: saga
+                    data: {"id":24,"type":"saga","occurredAt":"2026-11-22T12:32:00Z","cycleId":"ciclo-v3-123","data":{"source":"OUTBOUND","messageType":"SAGA_START","status":"STARTED"}}
+
+                    id: 25
+                    event: alert
+                    data: {"id":25,"type":"alert","occurredAt":"2026-11-22T12:33:00Z","cycleId":"ciclo-v3-123","data":{"source":"RECONCILIATION","messageType":"wallet-reconciliation","status":"MISMATCH"}}
+
+                    : heartbeat
+
         '400':
-          description: Malformed Last-Event-ID
+          description: Malformed or out-of-range Last-Event-ID (Invalid Last-Event-ID).
         '401':
-          description: Missing, expired or invalid bearer token
+          description: Missing, expired or invalid bearer token. Obtain valid authorization before reconnecting.
         '403':
-          description: Missing identity or permission, or access revoked
+          description: Missing identity or permission, or access revoked. Stop retries until access is granted.
         '409':
-          description: Cursor is ahead of the latest published ID
+          description: Last-Event-ID is ahead of the latest published ID.
+        '422':
+          description: Framework request validation error. Invalid Last-Event-ID values return 400.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
         '503':
-          description: Replay or authentication temporarily unavailable
+          description: Replay or authentication unavailable. A missing checkpoint or gap can persist across retries.
       security:
       - OAuth2PasswordBearer: []
   /cycles:

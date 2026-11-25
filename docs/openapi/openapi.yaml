@@ -3,6 +3,49 @@ info:
   title: EnergyShark E2 API
   version: 3.0.2
 paths:
+  /events/stream:
+    get:
+      tags:
+      - events
+      summary: E3-033 - Authenticated SSE event feed
+      description: >-
+        E3-032/RF01. Durable streaming notifications from audit and outbox.
+        Categories market, wallet, saga and alert. Identifiers are globally
+        monotonically increasing commit-ordered cursors. Authorization uses
+        Auth0 Bearer JWT; no internal payloads or credentials are sent.
+        On reconnect supply Last-Event-ID with the last processed SSE cursor.
+      operationId: stream_events_events_stream_get
+      parameters:
+      - in: header
+        name: Last-Event-ID
+        required: false
+        schema:
+          type: string
+          pattern: '^(0|[1-9][0-9]*)$'
+        description: Last fully processed SSE id; omitted means from 0.
+      responses:
+        '200':
+          description: Streaming, newline-delimited SSE messages and keep-alive comments
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: no-cache, no-transform
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE wire format (id, event, data and heartbeats)
+        '400':
+          description: Malformed Last-Event-ID
+        '401':
+          description: Missing, expired or invalid bearer token
+        '403':
+          description: User identity/permission insufficient
+        '409':
+          description: Cursor is ahead of the latest committed id
+      security:
+      - OAuth2PasswordBearer: []
   /cycles:
     get:
       tags:

@@ -1,4 +1,4 @@
-# E3-032 — Contrato de eventos SSE (RF01), v1
+# E3-032 y E3-034 — Contrato de eventos SSE (RF01), v1
 
 Fecha de propuesta: 2026-11-21. API: `GET /events/stream`, `Accept: text/event-stream`.
 
@@ -6,8 +6,8 @@ Fecha de propuesta: 2026-11-21. API: `GET /events/stream`, `Accept: text/event-s
 
 - `Authorization: Bearer <access-token>` de Auth0; la misma verificación JWT de `/audit/*` (firma, issuer, audience, exp, sub).
 - Sólo operadores autenticados ven los eventos de **KLD**; una lectura no permite emitir órdenes ni alterar estados.
-- Con `SSE_REQUIRED_SCOPE=read:events` configurado en el backend, también exige ese OAuth scope. El valor por defecto vacío preserva la autorización actual del módulo audit.
-- Un JWT inválido o ausente: `401`. Identidad vacía o permiso insuficiente: `403`.
+- El backend exige el scope OAuth `read:events` por defecto. `SSE_REQUIRED_SCOPE` permite seleccionar otro scope.
+- Un JWT inválido, vencido o ausente devuelve `401`. Identidad vacía, permiso insuficiente o acceso revocado devuelven `403`.
 - Nunca enviar el JWT por URL o query string; `EventSource` nativo no permite Authorization, usar `fetch()` streaming.
 - CORS: sólo orígenes configurados, no usar comodines irrestrictos. La configuración de API Gateway debe admitir además el header `Last-Event-ID` en las solicitudes CORS preflight (y `Authorization`).
 
@@ -18,7 +18,7 @@ Respuesta HTTP exitosa:
 ```
 HTTP/1.1 200 OK
 Content-Type: text/event-stream; charset=utf-8
-Cache-Control: no-cache, no-transform
+Cache-Control: no-cache, no-store, no-transform
 
 id: 23
 event: wallet
@@ -45,16 +45,17 @@ Estos son **hechos persistidos**. `PUBLISHED` no equivale a aceptación comercia
 
 ## Durabilidad, secuencia y reinicio
 
-La tabla `sse_feed_events` registra una proyección pública generada mediante triggers transaccionales sobre `inbound_messages`, `outbound_messages` y `wallet_reconciliations`. Una fila `sse_feed_cursor` serializa la asignación de IDs mientras se confirma la transacción fuente. Un rollback revierte simultáneamente el ID y el evento. Una transacción que confirma después no puede generar un ID menor que uno ya visible.
+Los triggers de auditoría, outbox y conciliación guardan candidatos en la transacción de origen. Un proyector publica los candidatos confirmados, asigna IDs contiguos y avanza el cursor en una sola transacción independiente. Los IDs siguen el orden confirmado de publicación. `occurredAt` indica el momento de captura y puede retroceder dentro de ese orden.
 
-No se realiza backfill automático de hechos previos a la migración: la secuencia comienza con eventos creados tras instalar el registro. No se debe truncar historial de eventos en producción sin una política explícita de retención y recuperación.
+La secuencia comienza con eventos creados tras instalar el registro. Esta versión conserva el historial publicado indefinidamente.
 
 - `Last-Event-ID: 23` devuelve IDs mayores que 23 en orden ascendente; `id` identifica el evento mostrado, no la operación económica.
-- Header ausente: comenzar desde 0 (todos los eventos retenidos).
-- Cursor malformado: `400`; cursor mayor que el confirmado actual: `409`.
+- Con el header ausente, vacío o `0`, se reproduce todo el historial. El cursor usa decimal ASCII canónico y admite hasta `9223372036854775807`.
+- Un cursor malformado devuelve `400`. Un cursor superior al último ID publicado devuelve `409`.
+- Un hueco del historial o una falla de lectura devuelve `503` al iniciar el stream. Una conexión activa se cierra si la lectura deja de estar disponible.
 - Los comentarios `: heartbeat` no avanzan el cursor ni son eventos de negocio.
-- Las conexiones se cierran en caso de desconexión del cliente o expiración del JWT, y deben reabrirse con un token vigente.
-- Un cliente debe deduplicar por ID y conservar el último confirmado. El alcance E3-034 comprende validación integral de reconexión, retención e integración end-to-end.
+- Las conexiones se cierran al expirar el JWT o revocarse el acceso. El cliente puede reabrirlas cuando cuente con autorización vigente.
+- El cliente deduplica por el ID del frame y conserva el último que haya procesado por completo. Para reiniciar sin cursor tras un `400` o `409`, debe limpiar la vista del historial antes de volver a mostrarlo desde el comienzo.
 
 ## Advertencia de infraestructura
 

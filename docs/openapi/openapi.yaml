@@ -7,13 +7,13 @@ paths:
     get:
       tags:
       - events
-      summary: E3-033 - Authenticated SSE event feed
+      summary: E3-034 - Replay and stream operator events
       description: >-
-        E3-032/RF01. Durable streaming notifications from audit and outbox.
-        Categories market, wallet, saga and alert. Identifiers are globally
-        monotonically increasing commit-ordered cursors. Authorization uses
-        Auth0 Bearer JWT; no internal payloads or credentials are sent.
-        On reconnect supply Last-Event-ID with the last processed SSE cursor.
+        Durable notifications from audit and outbox in categories market, wallet,
+        saga and alert. IDs are contiguous in confirmed publication order.
+        Access requires an Auth0 Bearer JWT with a subject and the read:events
+        scope by default (configurable via SSE_REQUIRED_SCOPE). On reconnect
+        supply Last-Event-ID with the last fully processed event ID.
       operationId: stream_events_events_stream_get
       parameters:
       - in: header
@@ -22,7 +22,10 @@ paths:
         schema:
           type: string
           pattern: '^(0|[1-9][0-9]*)$'
-        description: Last fully processed SSE id; omitted means from 0.
+          maxLength: 19
+        description: >-
+          Last fully processed SSE ID, from 0 through 9223372036854775807.
+          Omit this header or send 0 to replay from the beginning.
       responses:
         '200':
           description: Streaming, newline-delimited SSE messages and keep-alive comments
@@ -30,7 +33,7 @@ paths:
             Cache-Control:
               schema:
                 type: string
-              description: no-cache, no-transform
+              description: no-cache, no-store, no-transform
           content:
             text/event-stream:
               schema:
@@ -41,9 +44,11 @@ paths:
         '401':
           description: Missing, expired or invalid bearer token
         '403':
-          description: User identity/permission insufficient
+          description: Missing identity or permission, or access revoked
         '409':
-          description: Cursor is ahead of the latest committed id
+          description: Cursor is ahead of the latest published ID
+        '503':
+          description: Replay or authentication temporarily unavailable
       security:
       - OAuth2PasswordBearer: []
   /cycles:

@@ -3,97 +3,6 @@ info:
   title: EnergyShark E2 API
   version: 3.0.2
 paths:
-  /events/stream:
-    description: >-
-      The deployment supplies the HTTPS base URL for this route. When the existing
-      HTTP API Gateway cannot stream responses, use the dedicated SSE HTTPS origin
-      in front of Master. The path and wire format are the same at either origin.
-    get:
-      tags:
-      - events
-      summary: Replay and stream operator events
-      description: >-
-        Durable KLD notifications in categories market, wallet, saga and alert.
-        IDs are contiguous in confirmed publication order. Send the Auth0 access
-        token in Authorization only. The JWT must have a subject and the
-        read:events scope by default (configurable via SSE_REQUIRED_SCOPE).
-        The dedicated proxy rejects query strings. Never place a JWT or API key
-        in the URL. A browser uses streaming fetch from an explicitly allowed
-        origin. After token expiry or access revocation the stream closes;
-        reconnect with current authorization and the last fully processed event ID.
-      operationId: stream_events_events_stream_get
-      parameters:
-      - in: header
-        name: Last-Event-ID
-        required: false
-        schema:
-          type: string
-          pattern: '^(0|[1-9][0-9]{0,18})?$'
-        description: >-
-          Last fully processed SSE ID, from 0 through 9223372036854775807.
-          Omit this header or send an empty value or 0 to replay from the beginning.
-      responses:
-        '200':
-          description: >-
-            SSE frames delivered progressively without proxy buffering. During idle
-            periods a heartbeat comment is sent about every 15 seconds.
-          headers:
-            Cache-Control:
-              schema:
-                type: string
-                const: 'no-cache, no-store, no-transform'
-            Access-Control-Allow-Origin:
-              description: Exact configured browser origin, when allowed
-              schema:
-                type: string
-          content:
-            text/event-stream:
-              schema:
-                type: string
-              example: |+
-                id: 23
-                event: wallet
-                data: {"id":23,"type":"wallet","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ciclo-v3-123","data":{"source":"INBOUND","messageType":"swap-settled","status":"PROCESSED"}}
-
-                : heartbeat
-
-        '400':
-          description: Malformed Last-Event-ID or query string rejected by the dedicated proxy
-        '401':
-          description: Missing, expired or invalid bearer token before opening the stream
-        '403':
-          description: Missing subject or permission, or access revoked before opening the stream
-        '409':
-          description: Cursor is ahead of the latest published ID
-        '503':
-          description: Replay or authentication temporarily unavailable
-      security:
-      - SseAuth0Bearer: []
-    options:
-      summary: CORS preflight for the SSE route
-      description: >-
-        The browser sends Origin, Access-Control-Request-Method set to GET and
-        Access-Control-Request-Headers with Authorization and, when resuming,
-        Last-Event-ID. The preflight carries no bearer token.
-      security: []
-      responses:
-        '200':
-          description: Preflight accepted for a configured browser origin
-          headers:
-            Access-Control-Allow-Origin:
-              description: Exact requested origin from the configured allowlist
-              schema:
-                type: string
-            Access-Control-Allow-Methods:
-              description: Includes GET
-              schema:
-                type: string
-            Access-Control-Allow-Headers:
-              description: Allows requested Authorization and Last-Event-ID headers
-              schema:
-                type: string
-        '400':
-          description: Rejected preflight or query string rejected by the dedicated proxy
   /cycles:
     get:
       tags:
@@ -4207,11 +4116,6 @@ components:
       - type
       title: ValidationError
   securitySchemes:
-    SseAuth0Bearer:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: Auth0 access token with RS256 signature and the configured issuer and audience
     OAuth2PasswordBearer:
       type: oauth2
       flows:

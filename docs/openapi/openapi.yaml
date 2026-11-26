@@ -3,54 +3,6 @@ info:
   title: EnergyShark E2 API
   version: 3.0.2
 paths:
-  /events/stream:
-    get:
-      tags:
-      - events
-      summary: E3-034 - Replay and stream operator events
-      description: >-
-        Durable notifications from audit and outbox in categories market, wallet,
-        saga and alert. IDs are contiguous in confirmed publication order.
-        Access requires an Auth0 Bearer JWT with a subject and the read:events
-        scope by default (configurable via SSE_REQUIRED_SCOPE). On reconnect
-        supply Last-Event-ID with the last fully processed event ID.
-      operationId: stream_events_events_stream_get
-      parameters:
-      - in: header
-        name: Last-Event-ID
-        required: false
-        schema:
-          type: string
-          pattern: '^(0|[1-9][0-9]*)$'
-          maxLength: 19
-        description: >-
-          Last fully processed SSE ID, from 0 through 9223372036854775807.
-          Omit this header or send 0 to replay from the beginning.
-      responses:
-        '200':
-          description: Streaming, newline-delimited SSE messages and keep-alive comments
-          headers:
-            Cache-Control:
-              schema:
-                type: string
-              description: no-cache, no-store, no-transform
-          content:
-            text/event-stream:
-              schema:
-                type: string
-                description: SSE wire format (id, event, data and heartbeats)
-        '400':
-          description: Malformed Last-Event-ID
-        '401':
-          description: Missing, expired or invalid bearer token
-        '403':
-          description: Missing identity or permission, or access revoked
-        '409':
-          description: Cursor is ahead of the latest published ID
-        '503':
-          description: Replay or authentication temporarily unavailable
-      security:
-      - OAuth2PasswordBearer: []
   /cycles:
     get:
       tags:

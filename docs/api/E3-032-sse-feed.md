@@ -1,4 +1,4 @@
-# E3-032, E3-034 y E3-053 — Contrato de eventos SSE (RF01), v1
+# E3-032, E3-034, E3-053 y E3-054 — Contrato de eventos SSE (RF01), v1
 
 Fecha de propuesta: 2026-11-21. API: `GET /events/stream`, `Accept: text/event-stream`.
 
@@ -31,9 +31,9 @@ data: {"id":23,"type":"wallet","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ci
 
 Todos los eventos poseen `id` entero, monotónico global y positivo; `type` entre `market|wallet|saga|alert`; `occurredAt` ISO-8601 UTC; `cycleId` cadena opaca o null; `data` objeto de sólo tres metadatos filtrados: `source`, `messageType`, `status`.
 
-`source` es `INBOUND|OUTBOUND|RECONCILIATION`; `messageType` proviene de una lista blanca de tipos del protocolo y `SAGA_START`/`wallet-reconciliation`; `status` se limita a un conjunto explícito y el desconocido se presenta como `OTHER`.
+`source` admite `INBOUND`, `OUTBOUND`, `RECONCILIATION`, `SAGA` y `MONITORING`. `messageType` identifica un tipo permitido de protocolo o un código del feed. Para estados heredados desconocidos, el backend emite `OTHER`.
 
-No se incluyen `idpk`, `msgId`, `swapToken`, `Idempotency-Key`, `execution_input`, `last_error`, `raw_payload`, `payload`, JWT, claves AWS ni otros campos sensibles. Los mensajes de auditoría/outbox se transforman a notificaciones seguras; jamás se serializa la fila ORM o el JSONB original.
+El payload excluye `swapId`, `idpk`, `msgId`, `swapToken`, `Idempotency-Key`, `execution_input`, `last_error`, `raw_payload`, `payload`, JWT, claves AWS ni otros campos sensibles. Los mensajes de auditoría/outbox se transforman a notificaciones seguras; jamás se serializa la fila ORM o el JSONB original.
 
 ## Categorías
 
@@ -42,13 +42,13 @@ No se incluyen `idpk`, `msgId`, `swapToken`, `Idempotency-Key`, `execution_input
 - `saga`: registro/actualización de intención `SAGA_START` en outbox de destino `STEP_FUNCTIONS`.
 - `alert`: mensajes con estado `FAILED|NACKED|DISCARDED`, `nack`, conciliación `MISMATCH|ERROR`.
 
-Estos son **hechos persistidos**. `PUBLISHED` no equivale a aceptación comercial; `202` no equivale a `SETTLED` y `SAGA_START/STARTED` no implica saga finalizada. Las alarmas CloudWatch/New Relic y transiciones detalladas de ejecución se integrarán en tareas E3 posteriores cuando sus fuentes estén disponibles.
+Estos son **hechos persistidos**. `PUBLISHED` no equivale a aceptación comercial; `202` no equivale a `SETTLED` y `SAGA_START/STARTED` no implica saga finalizada. E3-054 agrega las transiciones y alertas descritas abajo.
 
 ## Durabilidad, secuencia y reinicio
 
-Los triggers de auditoría, outbox y conciliación guardan candidatos en la transacción de origen. Un proyector publica los candidatos confirmados, asigna IDs contiguos y avanza el cursor en una sola transacción independiente. Los IDs siguen el orden confirmado de publicación. `occurredAt` indica el momento de captura y puede retroceder dentro de ese orden.
+Los triggers de auditoría, outbox, conciliación y saga guardan candidatos en la transacción de origen. Un proyector publica los candidatos confirmados, asigna IDs contiguos y avanza el cursor en una sola transacción independiente. Los IDs siguen el orden confirmado de publicación. `occurredAt` indica el momento de captura u observación y puede retroceder dentro de ese orden.
 
-La secuencia comienza con eventos creados tras instalar el registro. Esta versión conserva el historial publicado indefinidamente.
+La secuencia comienza con eventos creados tras instalar el registro. E3-054 agrega hechos al historial existente y conserva los IDs publicados. La versión actual conserva el historial indefinidamente. Los IDs son globales dentro del feed de KLD y compartidos entre réplicas.
 
 - `Last-Event-ID: 23` devuelve IDs mayores que 23 en orden ascendente; `id` identifica el evento mostrado, no la operación económica.
 - Con el header ausente, vacío o `0`, se reproduce todo el historial. El cursor usa decimal ASCII canónico y admite hasta `9223372036854775807`.
@@ -57,6 +57,52 @@ La secuencia comienza con eventos creados tras instalar el registro. Esta versi�
 - Durante inactividad, Master envía comentarios `: heartbeat` aproximadamente cada 15 segundos. Los comentarios quedan fuera de la secuencia de IDs y del checkpoint.
 - Master devuelve `401` o `403` antes de comenzar la respuesta. Tras el `200`, la expiración del JWT o la detección de revocación cierran la conexión. Reabrir con autorización vigente y enviar el último ID completamente procesado en `Last-Event-ID`.
 - El cliente deduplica por el ID del frame y conserva el último que haya procesado por completo. Para reiniciar sin cursor tras un `400` o `409`, debe limpiar la vista del historial antes de volver a mostrarlo desde el comienzo.
+
+
+## Transiciones y alertas E3-054
+
+Una transición usa `event: saga`, `data.source = SAGA` y `data.messageType = saga-transition`. Su `data.status` refleja `PENDING_START`, `RUNNING`, `WAITING`, `SETTLED`, `REJECTED`, `FAILED`, `COMPENSATED` o `TIMED_OUT`. El evento previo `SAGA_START` de origen `OUTBOUND` conserva el significado de sus estados.
+
+Una alerta usa `event: alert`. `data.messageType` identifica la familia y `data.status` describe la observación. La severidad del sistema de monitoreo queda fuera del payload.
+
+| Código | Origen | Estado |
+| --- | --- | --- |
+| `ledger-wallet-delta` | `RECONCILIATION` | `DIVERGENT` |
+| `saga-stuck` | `SAGA` | `OPEN` |
+| `outbox-aged` | `OUTBOUND` | `OPEN` |
+| `wallet-slow` | `MONITORING` | `OPEN` |
+| `consumer-lag` | `MONITORING` | `OPEN` |
+
+`OPEN` representa una apertura observada. Las alertas de monitoreo ilustradas requieren condiciones verificadas y un importador operativo. Su `cycleId` es `null`. Los eventos de conciliación sin divergencia y las alertas previas de auditoría siguen disponibles.
+
+```text
+id: 24
+event: saga
+data: {"id":24,"type":"saga","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ciclo-v3-123","data":{"source":"SAGA","messageType":"saga-transition","status":"WAITING"}}
+
+id: 25
+event: alert
+data: {"id":25,"type":"alert","occurredAt":"2026-11-22T12:31:00Z","cycleId":null,"data":{"source":"MONITORING","messageType":"wallet-slow","status":"OPEN"}}
+
+```
+
+## Búsqueda autorizada por correlación
+
+Enviar `POST /events/search` al mismo origen HTTPS que el feed con el bearer y `Content-Type: application/json`. El navegador usa preflight para `POST` con `Authorization` y `Content-Type`. El cuerpo admite exactamente un selector de coincidencia completa y sensible a mayúsculas, `cycleId`, `swapId` o `idpk`. El selector debe contener de 1 a 256 caracteres sin NUL. `after` es opcional y usa el mismo formato decimal que `Last-Event-ID`.
+
+```json
+{"cycleId":"ciclo-v3-123","after":"23"}
+```
+
+La respuesta `200` tiene `Cache-Control: no-store` y un objeto `events` con hasta 100 eventos en orden ascendente por el ID global. Los resultados filtrados pueden saltar IDs. Continuar con el último ID devuelto. Una búsqueda sin coincidencias o con un cursor futuro válido devuelve `{"events":[]}`.
+
+El servidor resuelve `swapId` e `idpk` contra las filas fuente conservadas de saga, auditoría y outbox. Un evento anterior a la vinculación de un swap puede aparecer en resultados posteriores. Mantener los filtros en el cuerpo y fuera de URLs y logs. La respuesta muestra el evento público y omite las claves de búsqueda privadas.
+
+La búsqueda usa el mismo permiso SSE y la misma comprobación de revocación que el stream. Devuelve `401` para credencial ausente, inválida o vencida, `403` para sujeto sin acceso y `503` si la consulta o autenticación no está disponible. El backend lee el JSON de la petición y devuelve `400` para un filtro o cursor inválido, incluido un cuerpo con más de un selector. Esta validación no emite `422`. El proxy dedicado devuelve `413` si el cuerpo supera 4 KiB.
+
+## Compatibilidad de clientes
+
+E3-054 conserva los nombres `market`, `wallet`, `saga` y `alert`, la forma JSON y la numeración de E3-052. El cliente E3-052 tiene una lista cerrada de fuentes. Debe admitir `SAGA` y `MONITORING` antes de activar las nuevas fuentes en un ambiente compartido. Una versión anterior puede omitir sus tramas y avanzar el cursor al procesar un evento posterior.
 
 ## Origen HTTPS de E3-053
 

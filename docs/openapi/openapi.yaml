@@ -50,12 +50,29 @@ paths:
             text/event-stream:
               schema:
                 type: string
-              example: |+
-                id: 23
-                event: wallet
-                data: {"id":23,"type":"wallet","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ciclo-v3-123","data":{"source":"INBOUND","messageType":"swap-settled","status":"PROCESSED"}}
+                description: Each SSE data line contains a SseFeedEvent JSON object.
+                x-sse-data-schema:
+                  $ref: '#/components/schemas/SseFeedEvent'
+              examples:
+                wallet:
+                  value: |+
+                    id: 23
+                    event: wallet
+                    data: {"id":23,"type":"wallet","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ciclo-v3-123","data":{"source":"INBOUND","messageType":"swap-settled","status":"PROCESSED"}}
 
-                : heartbeat
+                    : heartbeat
+
+                sagaTransition:
+                  value: |+
+                    id: 24
+                    event: saga
+                    data: {"id":24,"type":"saga","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ciclo-v3-123","data":{"source":"SAGA","messageType":"saga-transition","status":"WAITING"}}
+
+                alert:
+                  value: |+
+                    id: 25
+                    event: alert
+                    data: {"id":25,"type":"alert","occurredAt":"2026-11-22T12:31:00Z","cycleId":null,"data":{"source":"MONITORING","messageType":"wallet-slow","status":"OPEN"}}
 
         '400':
           description: Malformed Last-Event-ID or query string rejected by the dedicated proxy
@@ -94,6 +111,77 @@ paths:
                 type: string
         '400':
           description: Rejected preflight or query string rejected by the dedicated proxy
+  /events/search:
+    description: Use the configured HTTPS origin of the operator feed.
+    post:
+      tags:
+      - events
+      summary: Find published events by one exact correlation
+      operationId: search_events_events_search_post
+      description: >-
+        Requires the same Auth0 bearer, subject, read:events scope by default,
+        and revocation check as the stream. Pass exactly one case-sensitive
+        selector in the JSON body. The server resolves swapId and idpk against
+        retained source records. Credentials belong in Authorization. Correlation
+        values belong in the body. The dedicated proxy rejects query strings.
+        The same global feed IDs identify search results and SSE frames.
+      security:
+      - SseAuth0Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SseEventSearch'
+            examples:
+              byCycle:
+                value: {cycleId: ciclo-v3-123, after: '23'}
+              bySwap:
+                value: {swapId: swap-de-prueba}
+              byIdpk:
+                value: {idpk: '8bf34dc6-a46c-4616-972e-cf2d4d675450'}
+      responses:
+        '200':
+          description: Up to 100 matching events in ascending ID order. Use the last returned ID as after for the next page.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [events]
+                properties:
+                  events:
+                    type: array
+                    maxItems: 100
+                    items:
+                      $ref: '#/components/schemas/SseFeedEvent'
+              example:
+                events:
+                - {"id":24,"type":"saga","occurredAt":"2026-11-22T12:31:00Z","cycleId":"ciclo-v3-123","data":{"source":"SAGA","messageType":"saga-transition","status":"WAITING"}}
+        '400':
+          description: Malformed JSON, invalid selector or cursor, or query string rejected by the proxy. Application validation uses 400 for these errors.
+        '401':
+          description: Missing, expired or invalid bearer token
+        '403':
+          description: Missing subject or permission, or access revoked
+        '413':
+          description: Request exceeds the dedicated proxy's 4 KiB body limit
+        '503':
+          description: Search or authentication temporarily unavailable
+    options:
+      summary: CORS preflight for event search
+      description: Request POST with Authorization and Content-Type from a permitted origin.
+      security: []
+      responses:
+        '200':
+          description: Preflight accepted for a configured browser origin
+        '400':
+          description: Preflight rejected or query string rejected by the dedicated proxy
   /cycles:
     get:
       tags:
@@ -1633,6 +1721,120 @@ paths:
                 $ref: '#/components/schemas/HTTPValidationError'
 components:
   schemas:
+    SseEventSearch:
+      type: object
+      additionalProperties: false
+      oneOf:
+      - required: [cycleId]
+      - required: [swapId]
+      - required: [idpk]
+      properties:
+        cycleId:
+          $ref: '#/components/schemas/SseCorrelationValue'
+        swapId:
+          $ref: '#/components/schemas/SseCorrelationValue'
+        idpk:
+          $ref: '#/components/schemas/SseCorrelationValue'
+        after:
+          type: string
+          pattern: '^(0|[1-9][0-9]{0,18})?$'
+          description: Exclusive global feed ID, at most 9223372036854775807. Omit, send an empty string, or send 0 to start at the beginning. A valid future ID returns an empty page.
+    SseCorrelationValue:
+      type: string
+      minLength: 1
+      maxLength: 256
+      pattern: '^[^\u0000]+$'
+    SseFeedEvent:
+      type: object
+      additionalProperties: false
+      required: [id, type, occurredAt, cycleId, data]
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9223372036854775807
+        type:
+          type: string
+          enum: [market, wallet, saga, alert]
+          description: Matches the SSE event field.
+        occurredAt:
+          type: string
+          format: date-time
+          pattern: 'Z$'
+          description: UTC timestamp from the observation or capture. Sort by id for replay.
+        cycleId:
+          type: [string, 'null']
+          description: Opaque cycle identifier when associated with the event.
+        data:
+          type: object
+          additionalProperties: false
+          required: [source, messageType, status]
+          properties:
+            source:
+              type: string
+              enum: [INBOUND, OUTBOUND, RECONCILIATION, SAGA, MONITORING]
+            messageType:
+              type: string
+              description: Allowlisted protocol type or event code.
+            status:
+              type: string
+              description: Observed state. For an unrecognized legacy state, the server emits OTHER.
+      allOf:
+      - if:
+          properties:
+            data:
+              properties:
+                messageType: {const: saga-transition}
+        then:
+          properties:
+            type: {const: saga}
+            data:
+              properties:
+                source: {const: SAGA}
+                status:
+                  enum: [PENDING_START, RUNNING, WAITING, SETTLED, REJECTED, FAILED, COMPENSATED, TIMED_OUT]
+      - if:
+          properties:
+            data:
+              properties:
+                messageType: {const: ledger-wallet-delta}
+        then:
+          properties:
+            type: {const: alert}
+            data:
+              properties:
+                source: {const: RECONCILIATION}
+                status: {const: DIVERGENT}
+      - if:
+          properties:
+            data:
+              properties:
+                messageType:
+                  enum: [saga-stuck, outbox-aged, wallet-slow, consumer-lag]
+        then:
+          properties:
+            type: {const: alert}
+            data:
+              properties:
+                status: {const: OPEN}
+          oneOf:
+          - properties:
+              data:
+                properties:
+                  messageType: {const: saga-stuck}
+                  source: {const: SAGA}
+          - properties:
+              data:
+                properties:
+                  messageType: {const: outbox-aged}
+                  source: {const: OUTBOUND}
+          - properties:
+              cycleId: {type: 'null'}
+              data:
+                properties:
+                  messageType: {enum: [wallet-slow, consumer-lag]}
+                  source: {const: MONITORING}
     AuditAnomalyListOut:
       properties:
         total:
